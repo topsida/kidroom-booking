@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors } from '@/constants/colors';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
-export default function RootLayout() {
+function RootContent() {
   const { session, loading } = useAuth();
+  const { colors, theme } = useTheme();
   const segments = useSegments();
   const router = useRouter();
 
@@ -22,8 +24,8 @@ export default function RootLayout() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -35,18 +37,28 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="room/[id]"
-          options={{ headerShown: true, title: 'Комната', headerTintColor: Colors.primary, headerBackTitle: 'Назад' }}
+          options={{ headerShown: true, title: 'Комната', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
         />
         <Stack.Screen
           name="booking/[roomId]"
-          options={{ headerShown: true, title: 'Бронирование', headerTintColor: Colors.primary, headerBackTitle: 'Назад' }}
+          options={{ headerShown: true, title: 'Бронирование', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
         />
         <Stack.Screen
           name="confirmation/[bookingId]"
-          options={{ headerShown: true, title: 'Подтверждение', headerTintColor: Colors.primary, headerBackVisible: false }}
+          options={{ headerShown: true, title: 'Подтверждение', headerTintColor: colors.primary, headerBackVisible: false, headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
         />
       </Stack>
-      <StatusBar style="dark" />
+      <StatusBar style={theme.id === 'dark' ? 'light' : 'dark'} />
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <RootContent />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, Image, StyleSheet, TouchableOpacity,
   Dimensions, ActivityIndicator,
@@ -7,13 +7,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Room, Review } from '@/types';
-import { Colors } from '@/constants/colors';
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { StarRating } from '@/components/StarRating';
 
 const W = Dimensions.get('window').width;
 
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [room, setRoom] = useState<Room | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +35,7 @@ export default function RoomScreen() {
   }, [id]);
 
   if (loading || !room) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+    return <View style={styles.centered}><ActivityIndicator size="large" color={C.primary} /></View>;
   }
 
   return (
@@ -59,18 +62,18 @@ export default function RoomScreen() {
         <View style={styles.titleRow}>
           <Text style={styles.name}>{room.name}</Text>
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={13} color={Colors.star} />
+            <Ionicons name="star" size={13} color={C.star} />
             <Text style={styles.ratingText}>{room.rating.toFixed(1)}</Text>
           </View>
         </View>
 
         <View style={styles.infoRow}>
-          <Ionicons name="location" size={15} color={Colors.primary} />
+          <Ionicons name="location" size={15} color={C.primary} />
           <Text style={styles.infoText}>{room.address}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Ionicons name="time" size={15} color={Colors.primary} />
+          <Ionicons name="time" size={15} color={C.primary} />
           <Text style={styles.infoText}>
             Работает {room.working_hours_start.slice(0, 5)} — {room.working_hours_end.slice(0, 5)}
           </Text>
@@ -115,33 +118,35 @@ export default function RoomScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  photo: { height: 270 },
-  dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-  dotActive: { backgroundColor: Colors.white, width: 22 },
-  content: { padding: 20, gap: 14 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 22, fontWeight: '800', color: Colors.text, flex: 1, marginRight: 8 },
-  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9E6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  ratingText: { fontSize: 13, fontWeight: '700', color: '#9A7000' },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: 14, color: Colors.textLight, flex: 1 },
-  priceBox: { backgroundColor: Colors.primaryLight, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
-  price: { fontSize: 24, fontWeight: '800', color: Colors.primary },
-  description: { fontSize: 15, color: Colors.text, lineHeight: 23 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 4 },
-  noReviewsBox: { backgroundColor: Colors.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border },
-  noReviews: { color: Colors.textLight, fontSize: 14, fontStyle: 'italic' },
-  reviewCard: { backgroundColor: Colors.white, borderRadius: 12, padding: 14, gap: 6, borderWidth: 1, borderColor: Colors.border },
-  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reviewAuthor: { fontWeight: '700', color: Colors.text, fontSize: 14 },
-  reviewComment: { fontSize: 14, color: Colors.text, lineHeight: 20 },
-  reviewDate: { fontSize: 12, color: Colors.textLight },
-  footer: { padding: 20, paddingTop: 0 },
-  bookBtn: { backgroundColor: Colors.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
-  bookBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
+    photo: { height: 270 },
+    dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
+    dotActive: { backgroundColor: '#FFFFFF', width: 22 },
+    content: { padding: 20, gap: 14 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    name: { fontSize: 22, fontWeight: '800', color: C.text, flex: 1, marginRight: 8 },
+    ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9E6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+    ratingText: { fontSize: 13, fontWeight: '700', color: '#9A7000' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    infoText: { fontSize: 14, color: C.textLight, flex: 1 },
+    priceBox: { backgroundColor: C.primaryLight, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    priceLabel: { fontSize: 14, color: C.primary, fontWeight: '600' },
+    price: { fontSize: 24, fontWeight: '800', color: C.primary },
+    description: { fontSize: 15, color: C.text, lineHeight: 23 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: C.text, marginTop: 4 },
+    noReviewsBox: { backgroundColor: C.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border },
+    noReviews: { color: C.textLight, fontSize: 14, fontStyle: 'italic' },
+    reviewCard: { backgroundColor: C.white, borderRadius: 12, padding: 14, gap: 6, borderWidth: 1, borderColor: C.border },
+    reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    reviewAuthor: { fontWeight: '700', color: C.text, fontSize: 14 },
+    reviewComment: { fontSize: 14, color: C.text, lineHeight: 20 },
+    reviewDate: { fontSize: 12, color: C.textLight },
+    footer: { padding: 20, paddingTop: 0 },
+    bookBtn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
+    bookBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  });
+}

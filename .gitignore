@@ -11,6 +11,9 @@ web-build/
 .env.local
 .env.*.local
 
+# Claude Code
+.claude/
+
 # Системные файлы
 .DS_Store
 Thumbs.db

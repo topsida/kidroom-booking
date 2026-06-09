@@ -1,16 +1,20 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Booking } from '@/types';
-import { Colors } from '@/constants/colors';
-
-const STATUS: Record<string, { label: string; color: string }> = {
-  confirmed: { label: 'Подтверждено', color: Colors.success },
-  pending:   { label: 'Ожидает',      color: Colors.warning },
-  cancelled: { label: 'Отменено',     color: Colors.error },
-  completed: { label: 'Завершено',    color: Colors.textLight },
-};
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 
 export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?: () => void }) {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
+  const STATUS: Record<string, { label: string; color: string }> = {
+    confirmed: { label: 'Подтверждено', color: C.success },
+    pending:   { label: 'Ожидает',      color: C.warning },
+    cancelled: { label: 'Отменено',     color: C.error },
+    completed: { label: 'Завершено',    color: C.textLight },
+  };
+
   const status = STATUS[booking.status] ?? STATUS.confirmed;
   const dateFormatted = new Date(booking.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -30,13 +34,13 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
         </View>
       </View>
       <View style={styles.row}>
-        <Ionicons name="calendar-outline" size={14} color={Colors.textLight} />
+        <Ionicons name="calendar-outline" size={14} color={C.textLight} />
         <Text style={styles.detail}>{dateFormatted}</Text>
-        <Ionicons name="time-outline" size={14} color={Colors.textLight} />
+        <Ionicons name="time-outline" size={14} color={C.textLight} />
         <Text style={styles.detail}>{booking.time_slot.slice(0, 5)}</Text>
       </View>
       <View style={styles.row}>
-        <Ionicons name="happy-outline" size={14} color={Colors.textLight} />
+        <Ionicons name="happy-outline" size={14} color={C.textLight} />
         <Text style={styles.detail}>{booking.child_name}, {booking.child_age} лет</Text>
       </View>
       <View style={styles.footer}>
@@ -51,16 +55,18 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: Colors.white, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border, gap: 8 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: Colors.text, flex: 1, marginRight: 8 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detail: { fontSize: 14, color: Colors.textLight, marginRight: 6 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  price: { fontSize: 18, fontWeight: '800', color: Colors.primary },
-  cancelBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.error },
-  cancelText: { fontSize: 13, fontWeight: '600', color: Colors.error },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    card: { backgroundColor: C.white, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.border, gap: 8 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    name: { fontSize: 16, fontWeight: '700', color: C.text, flex: 1, marginRight: 8 },
+    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    badgeText: { fontSize: 12, fontWeight: '600' },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    detail: { fontSize: 14, color: C.textLight, marginRight: 6 },
+    footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+    price: { fontSize: 18, fontWeight: '800', color: C.primary },
+    cancelBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: C.error },
+    cancelText: { fontSize: 13, fontWeight: '600', color: C.error },
+  });
+}

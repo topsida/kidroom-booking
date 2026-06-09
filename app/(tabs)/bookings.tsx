@@ -1,17 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, SafeAreaView,
+  View, Text, FlatList, StyleSheet,
   ActivityIndicator, RefreshControl, TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Booking } from '@/types';
-import { Colors } from '@/constants/colors';
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { BookingCard } from '@/components/BookingCard';
 
 type Tab = 'active' | 'past';
 
 export default function BookingsScreen() {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('active');
@@ -42,7 +46,7 @@ export default function BookingsScreen() {
   const shown = tab === 'active' ? active : past;
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+    return <View style={styles.centered}><ActivityIndicator size="large" color={C.primary} /></View>;
   }
 
   return (
@@ -77,7 +81,7 @@ export default function BookingsScreen() {
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadBookings} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadBookings} tintColor={C.primary} />}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>{tab === 'active' ? '📅' : '🗂️'}</Text>
@@ -90,18 +94,20 @@ export default function BookingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.text, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
-  tabs: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 14 },
-  tab: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center' },
-  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tabText: { color: Colors.textLight, fontWeight: '600', fontSize: 13 },
-  tabTextActive: { color: Colors.white },
-  list: { paddingHorizontal: 20, paddingBottom: 20 },
-  empty: { alignItems: 'center', paddingTop: 70, gap: 10 },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { color: Colors.text, fontSize: 16, fontWeight: '600' },
-  emptyHint: { color: Colors.textLight, fontSize: 14 },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
+    title: { fontSize: 24, fontWeight: '800', color: C.text, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
+    tabs: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 14 },
+    tab: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
+    tabActive: { backgroundColor: C.primary, borderColor: C.primary },
+    tabText: { color: C.textLight, fontWeight: '600', fontSize: 13 },
+    tabTextActive: { color: '#FFFFFF' },
+    list: { paddingHorizontal: 20, paddingBottom: 20 },
+    empty: { alignItems: 'center', paddingTop: 70, gap: 10 },
+    emptyEmoji: { fontSize: 48 },
+    emptyTitle: { color: C.text, fontSize: 16, fontWeight: '600' },
+    emptyHint: { color: C.textLight, fontSize: 14 },
+  });
+}

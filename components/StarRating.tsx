@@ -1,8 +1,9 @@
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export function StarRating({ value, size = 16 }: { value: number; size?: number }) {
+  const { colors: C } = useTheme();
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
@@ -10,7 +11,7 @@ export function StarRating({ value, size = 16 }: { value: number; size?: number 
           key={i}
           name={i <= Math.round(value) ? 'star' : 'star-outline'}
           size={size}
-          color={Colors.star}
+          color={C.star}
         />
       ))}
     </View>

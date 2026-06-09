@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator,
@@ -7,7 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { supabase } from '@/lib/supabase';
 import { Room } from '@/types';
-import { Colors } from '@/constants/colors';
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
 
 LocaleConfig.locales['ru'] = {
@@ -21,6 +21,9 @@ LocaleConfig.defaultLocale = 'ru';
 
 export default function BookingScreen() {
   const { roomId, roomName } = useLocalSearchParams<{ roomId: string; roomName: string }>();
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [room, setRoom] = useState<Room | null>(null);
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
@@ -87,7 +90,7 @@ export default function BookingScreen() {
   }
 
   if (!room) {
-    return <View style={styles.centered}><ActivityIndicator color={Colors.primary} size="large" /></View>;
+    return <View style={styles.centered}><ActivityIndicator color={C.primary} size="large" /></View>;
   }
 
   return (
@@ -101,14 +104,17 @@ export default function BookingScreen() {
         <Text style={styles.step}>1. Выберите дату</Text>
         <Calendar
           onDayPress={day => setDate(day.dateString)}
-          markedDates={date ? { [date]: { selected: true, selectedColor: Colors.primary } } : {}}
+          markedDates={date ? { [date]: { selected: true, selectedColor: C.primary } } : {}}
           minDate={today}
           theme={{
-            todayTextColor: Colors.primary,
-            arrowColor: Colors.primary,
-            textSectionTitleColor: Colors.textLight,
-            selectedDayBackgroundColor: Colors.primary,
-            calendarBackground: Colors.white,
+            todayTextColor: C.primary,
+            arrowColor: C.primary,
+            textSectionTitleColor: C.textLight,
+            selectedDayBackgroundColor: C.primary,
+            calendarBackground: C.white,
+            dayTextColor: C.text,
+            monthTextColor: C.text,
+            textDisabledColor: C.border,
           }}
           style={styles.calendar}
         />
@@ -133,7 +139,7 @@ export default function BookingScreen() {
           placeholder="Имя ребёнка"
           value={childName}
           onChangeText={setChildName}
-          placeholderTextColor={Colors.textLight}
+          placeholderTextColor={C.textLight}
         />
         <TextInput
           style={styles.input}
@@ -142,7 +148,7 @@ export default function BookingScreen() {
           onChangeText={setChildAge}
           keyboardType="number-pad"
           maxLength={2}
-          placeholderTextColor={Colors.textLight}
+          placeholderTextColor={C.textLight}
         />
 
         {date && timeSlot && (
@@ -167,21 +173,23 @@ export default function BookingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, gap: 14, paddingBottom: 40 },
-  roomBanner: { backgroundColor: Colors.primaryLight, borderRadius: 14, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  roomName: { fontSize: 16, fontWeight: '700', color: Colors.primary, flex: 1 },
-  roomPrice: { fontSize: 16, fontWeight: '700', color: Colors.primary },
-  step: { fontSize: 16, fontWeight: '700', color: Colors.text, marginTop: 6 },
-  calendar: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
-  input: { backgroundColor: Colors.white, borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1.5, borderColor: Colors.border, color: Colors.text },
-  summary: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.white, padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: Colors.primary },
-  summaryLabel: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  summaryNote: { fontSize: 12, color: Colors.textLight, marginTop: 2 },
-  summaryPrice: { fontSize: 22, fontWeight: '800', color: Colors.primary },
-  btn: { backgroundColor: Colors.primary, borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 4 },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
+    content: { padding: 20, gap: 14, paddingBottom: 40 },
+    roomBanner: { backgroundColor: C.primaryLight, borderRadius: 14, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    roomName: { fontSize: 16, fontWeight: '700', color: C.primary, flex: 1 },
+    roomPrice: { fontSize: 16, fontWeight: '700', color: C.primary },
+    step: { fontSize: 16, fontWeight: '700', color: C.text, marginTop: 6 },
+    calendar: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.border },
+    input: { backgroundColor: C.white, borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1.5, borderColor: C.border, color: C.text },
+    summary: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white, padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: C.primary },
+    summaryLabel: { fontSize: 14, fontWeight: '600', color: C.text },
+    summaryNote: { fontSize: 12, color: C.textLight, marginTop: 2 },
+    summaryPrice: { fontSize: 22, fontWeight: '800', color: C.primary },
+    btn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 4 },
+    btnDisabled: { opacity: 0.5 },
+    btnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  });
+}

@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Colors } from '@/constants/colors';
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 
 export default function VerifyScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(60);
@@ -35,10 +39,11 @@ export default function VerifyScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <View style={styles.content}>
         <Text style={styles.emoji}>📱</Text>
         <Text style={styles.title}>Введите код</Text>
@@ -54,7 +59,7 @@ export default function VerifyScreen() {
           maxLength={6}
           autoFocus
           placeholder="• • • • • •"
-          placeholderTextColor={Colors.border}
+          placeholderTextColor={C.border}
           returnKeyType="done"
           onSubmitEditing={verify}
         />
@@ -77,33 +82,26 @@ export default function VerifyScreen() {
           <Text style={styles.back}>← Изменить номер</Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, gap: 18, paddingBottom: 40 },
-  emoji: { fontSize: 56, textAlign: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.text, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: Colors.textLight, textAlign: 'center', lineHeight: 22 },
-  phone: { fontWeight: '700', color: Colors.text },
-  codeInput: {
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    padding: 20,
-    fontSize: 30,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    textAlign: 'center',
-    letterSpacing: 14,
-    color: Colors.text,
-    fontWeight: '700',
-  },
-  btn: { backgroundColor: Colors.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { color: Colors.white, fontSize: 17, fontWeight: '700' },
-  resend: { textAlign: 'center', color: Colors.primary, fontSize: 14, fontWeight: '600' },
-  resendDisabled: { color: Colors.textLight },
-  back: { textAlign: 'center', color: Colors.textLight, fontSize: 14 },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
+    flex: { flex: 1 },
+    content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, gap: 18, paddingBottom: 40 },
+    emoji: { fontSize: 56, textAlign: 'center' },
+    title: { fontSize: 28, fontWeight: '800', color: C.text, textAlign: 'center' },
+    subtitle: { fontSize: 15, color: C.textLight, textAlign: 'center', lineHeight: 22 },
+    phone: { fontWeight: '700', color: C.text },
+    codeInput: { backgroundColor: C.white, borderRadius: 14, padding: 20, fontSize: 30, borderWidth: 2, borderColor: C.primary, textAlign: 'center', letterSpacing: 14, color: C.text, fontWeight: '700' },
+    btn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
+    btnDisabled: { opacity: 0.5 },
+    btnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+    resend: { textAlign: 'center', color: C.primary, fontSize: 14, fontWeight: '600' },
+    resendDisabled: { color: C.textLight },
+    back: { textAlign: 'center', color: C.textLight, fontSize: 14 },
+  });
+}
