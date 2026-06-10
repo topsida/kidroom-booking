@@ -50,6 +50,7 @@ export interface PricingRule {
   room_id: string;
   name: string;
   day_type: 'weekday' | 'weekend' | 'all';
+  days_of_week: number[]; // 0=Вс 1=Пн 2=Вт 3=Ср 4=Чт 5=Пт 6=Сб
   time_from: string;
   time_to: string;
   price_modifier: number;

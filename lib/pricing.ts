@@ -1,8 +1,6 @@
 import { PricingRule } from '@/types';
 
-// Возвращает итоговую цену для конкретного слота
-// slotTime — строка вида "10:00"
-// date      — строка вида "2025-07-04"
+// slotTime — "10:00", date — "2025-07-04"
 export function getSlotPrice(
   basePrice: number,
   slotTime: string,
@@ -10,14 +8,21 @@ export function getSlotPrice(
   rules: PricingRule[],
 ): number {
   const hour = parseInt(slotTime.split(':')[0], 10);
-  // Используем T12:00 чтобы не попасть в ловушку часовых поясов
-  const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  const dayType = isWeekend ? 'weekend' : 'weekday';
+  // T12:00 — защита от смещения часового пояса
+  const dayOfWeek = new Date(date + 'T12:00:00').getDay(); // 0=Вс..6=Сб
 
   const match = rules.find(r => {
     if (!r.is_active) return false;
-    if (r.day_type !== 'all' && r.day_type !== dayType) return false;
+
+    // days_of_week приоритетнее устаревшего day_type
+    if (r.days_of_week?.length) {
+      if (!r.days_of_week.includes(dayOfWeek)) return false;
+    } else {
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const dayType   = isWeekend ? 'weekend' : 'weekday';
+      if (r.day_type !== 'all' && r.day_type !== dayType) return false;
+    }
+
     const fromH = parseInt(r.time_from.split(':')[0], 10);
     const toH   = parseInt(r.time_to.split(':')[0], 10);
     return hour >= fromH && hour < toH;
@@ -27,8 +32,6 @@ export function getSlotPrice(
   return Math.round(basePrice * match.price_modifier);
 }
 
-// Возвращает минимально возможную цену с учётом всех активных скидок
-// Используется для "от X ₽/час" в карточке комнаты
 export function getMinPrice(basePrice: number, rules: PricingRule[]): number {
   const discounts = rules.filter(r => r.is_active && r.price_modifier < 1);
   if (discounts.length === 0) return basePrice;
