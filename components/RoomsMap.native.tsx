@@ -20,7 +20,10 @@ export function RoomsMap({ rooms }: { rooms: Room[] }) {
   const [selected, setSelected] = useState<Room | null>(null);
   const markerPressed = useRef(false);
 
-  const mappable = rooms.filter(r => r.latitude != null && r.longitude != null);
+  // Явное приведение к Number — Supabase может вернуть строки
+  const mappable = rooms
+    .map(r => ({ ...r, latitude: Number(r.latitude), longitude: Number(r.longitude) }))
+    .filter(r => !isNaN(r.latitude) && !isNaN(r.longitude) && r.latitude !== 0 && r.longitude !== 0);
 
   return (
     <View style={styles.container}>
@@ -37,19 +40,13 @@ export function RoomsMap({ rooms }: { rooms: Room[] }) {
         {mappable.map(room => (
           <Marker
             key={room.id}
-            coordinate={{ latitude: room.latitude!, longitude: room.longitude! }}
-            tracksViewChanges={false}
+            coordinate={{ latitude: room.latitude, longitude: room.longitude }}
+            pinColor="red"
             onPress={() => {
               markerPressed.current = true;
               setSelected(room);
             }}
-          >
-            <View style={[styles.pin, selected?.id === room.id && styles.pinSelected]}>
-              <Text style={[styles.pinText, selected?.id === room.id && styles.pinTextSelected]}>
-                {room.price_per_hour} ₽
-              </Text>
-            </View>
-          </Marker>
+          />
         ))}
       </MapView>
 
@@ -98,23 +95,6 @@ function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1 },
     map: { flex: 1 },
-
-    pin: {
-      backgroundColor: '#E53935',
-      borderRadius: 20,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderWidth: 2,
-      borderColor: '#B71C1C',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    pinSelected: { backgroundColor: '#B71C1C' },
-    pinText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-    pinTextSelected: { color: '#fff' },
 
     card: {
       position: 'absolute',
