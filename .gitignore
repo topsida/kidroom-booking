@@ -28,3 +28,9 @@ npm-debug.log*
 # Android / iOS сборки
 android/
 ios/
+
+# EAS Build — секретные ключи
+service-account.json
+*.keystore
+*.jks
+google-services.json

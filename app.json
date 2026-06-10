@@ -12,13 +12,18 @@
       "resizeMode": "contain",
       "backgroundColor": "#EF9F27"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.kidroom.booking",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Приложение использует геолокацию для построения маршрута до игровой комнаты.",
-        "LSApplicationQueriesSchemes": ["yandexmaps", "comgooglemaps"]
+        "LSApplicationQueriesSchemes": [
+          "yandexmaps",
+          "comgooglemaps"
+        ]
       }
     },
     "android": {
@@ -44,6 +49,13 @@
     "scheme": "kidroom",
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11788b27-c68f-446f-9422-c8d23b8f6d39"
+      }
+    },
+    "owner": "topsida"
   }
 }
