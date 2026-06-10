@@ -11,7 +11,15 @@ export interface Room {
   owner_telegram_chat_id?: string;
   latitude?: number;
   longitude?: number;
+  min_age?: number;
+  max_age?: number;
   created_at: string;
+}
+
+export interface RoomFilters {
+  price:  'lt500' | '500to1000' | 'gt1000' | null;
+  age:    'lt3'   | '3to7'      | 'gt7'    | null;
+  rating: '4.5'   | '4.0'       | null;
 }
 
 export interface Review {

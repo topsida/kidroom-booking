@@ -28,6 +28,8 @@ create table public.rooms (
   owner_telegram_chat_id text,
   latitude double precision,
   longitude double precision,
+  min_age int default 1,
+  max_age int default 18,
   created_at timestamptz default now() not null
 );
 alter table public.rooms enable row level security;

@@ -6,13 +6,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Room } from '@/types';
+import { Room, RoomFilters } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { RoomsMap } from '@/components/RoomsMap';
+import { FilterChips } from '@/components/FilterChips';
 import { useAuth } from '@/hooks/useAuth';
 
 type ViewMode = 'list' | 'map';
+
+const DEFAULT_FILTERS: RoomFilters = { price: null, age: null, rating: null };
 
 export default function HomeScreen() {
   const { isGuest } = useAuth();
@@ -22,6 +25,7 @@ export default function HomeScreen() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filtered, setFiltered] = useState<Room[]>([]);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<RoomFilters>(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -29,17 +33,37 @@ export default function HomeScreen() {
   useEffect(() => { loadRooms(); }, []);
 
   useEffect(() => {
+    let result = rooms;
+
+    // Поиск
     const q = search.toLowerCase().trim();
-    setFiltered(q
-      ? rooms.filter(r => r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q))
-      : rooms
+    if (q) result = result.filter(r =>
+      r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q)
     );
-  }, [search, rooms]);
+
+    // Фильтр цены
+    if (filters.price === 'lt500')     result = result.filter(r => r.price_per_hour < 500);
+    if (filters.price === '500to1000') result = result.filter(r => r.price_per_hour >= 500 && r.price_per_hour <= 1000);
+    if (filters.price === 'gt1000')    result = result.filter(r => r.price_per_hour > 1000);
+
+    // Фильтр возраста (показываем комнату если возраст не задан или пересекается с диапазоном)
+    if (filters.age === 'lt3')
+      result = result.filter(r => r.min_age == null || r.min_age <= 3);
+    if (filters.age === '3to7')
+      result = result.filter(r => (r.min_age == null || r.min_age <= 7) && (r.max_age == null || r.max_age >= 3));
+    if (filters.age === 'gt7')
+      result = result.filter(r => r.max_age == null || r.max_age >= 7);
+
+    // Фильтр рейтинга
+    if (filters.rating === '4.5') result = result.filter(r => r.rating >= 4.5);
+    if (filters.rating === '4.0') result = result.filter(r => r.rating >= 4.0);
+
+    setFiltered(result);
+  }, [search, filters, rooms]);
 
   async function loadRooms() {
     const { data } = await supabase.from('rooms').select('*').order('rating', { ascending: false });
     setRooms(data ?? []);
-    setFiltered(data ?? []);
     setLoading(false);
     setRefreshing(false);
   }
@@ -65,21 +89,13 @@ export default function HomeScreen() {
             style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
             onPress={() => setViewMode('list')}
           >
-            <Ionicons
-              name="list-outline"
-              size={18}
-              color={viewMode === 'list' ? '#fff' : C.textLight}
-            />
+            <Ionicons name="list-outline" size={18} color={viewMode === 'list' ? '#fff' : C.textLight} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleBtn, viewMode === 'map' && styles.toggleBtnActive]}
             onPress={() => setViewMode('map')}
           >
-            <Ionicons
-              name="map-outline"
-              size={18}
-              color={viewMode === 'map' ? '#fff' : C.textLight}
-            />
+            <Ionicons name="map-outline" size={18} color={viewMode === 'map' ? '#fff' : C.textLight} />
           </TouchableOpacity>
         </View>
       </View>
@@ -92,17 +108,21 @@ export default function HomeScreen() {
       )}
 
       {viewMode === 'list' && (
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={C.textLight} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Поиск по названию или адресу..."
-            value={search}
-            onChangeText={setSearch}
-            placeholderTextColor={C.textLight}
-            clearButtonMode="while-editing"
-          />
-        </View>
+        <>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={18} color={C.textLight} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Поиск по названию или адресу..."
+              value={search}
+              onChangeText={setSearch}
+              placeholderTextColor={C.textLight}
+              clearButtonMode="while-editing"
+            />
+          </View>
+
+          <FilterChips filters={filters} onChange={setFilters} colors={C} />
+        </>
       )}
 
       {viewMode === 'list' ? (
@@ -123,6 +143,11 @@ export default function HomeScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>Ничего не найдено</Text>
+              {(filters.price || filters.age || filters.rating) && (
+                <TouchableOpacity onPress={() => setFilters(DEFAULT_FILTERS)}>
+                  <Text style={[styles.resetText, { color: C.primary }]}>Сбросить фильтры</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
         />
@@ -136,7 +161,7 @@ export default function HomeScreen() {
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: C.background },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
+    centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
 
     header: {
       flexDirection: 'row',
@@ -146,7 +171,7 @@ function makeStyles(C: ThemeColors) {
       paddingTop: 16,
       paddingBottom: 10,
     },
-    title: { fontSize: 26, fontWeight: '800', color: C.text },
+    title:    { fontSize: 26, fontWeight: '800', color: C.text },
     subtitle: { fontSize: 14, color: C.textLight, marginTop: 2 },
 
     toggle: {
@@ -157,7 +182,7 @@ function makeStyles(C: ThemeColors) {
       borderColor: C.border,
       overflow: 'hidden',
     },
-    toggleBtn: { padding: 9 },
+    toggleBtn:       { padding: 9 },
     toggleBtnActive: { backgroundColor: C.primary },
 
     guestBanner: {
@@ -179,7 +204,7 @@ function makeStyles(C: ThemeColors) {
       alignItems: 'center',
       backgroundColor: C.white,
       marginHorizontal: 20,
-      marginBottom: 8,
+      marginBottom: 10,
       borderRadius: 14,
       paddingHorizontal: 14,
       paddingVertical: 11,
@@ -189,9 +214,10 @@ function makeStyles(C: ThemeColors) {
     },
     searchInput: { flex: 1, fontSize: 15, color: C.text },
 
-    list: { paddingHorizontal: 20, paddingBottom: 20 },
-    empty: { alignItems: 'center', paddingTop: 80, gap: 10 },
-    emptyEmoji: { fontSize: 48 },
+    list:      { paddingHorizontal: 20, paddingBottom: 20 },
+    empty:     { alignItems: 'center', paddingTop: 80, gap: 10 },
+    emptyEmoji:{ fontSize: 48 },
     emptyText: { color: C.textLight, fontSize: 16 },
+    resetText: { fontSize: 14, fontWeight: '600', marginTop: 4 },
   });
 }
