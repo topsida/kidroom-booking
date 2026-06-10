@@ -109,7 +109,7 @@ function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: C.background },
     flex: { flex: 1 },
-    content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 60 },
+    content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingTop: 80, paddingBottom: 20 },
     emoji: { fontSize: 72, textAlign: 'center', marginBottom: 8 },
     title: { fontSize: 34, fontWeight: '800', color: C.primary, textAlign: 'center' },
     subtitle: { fontSize: 16, color: C.textLight, textAlign: 'center', marginTop: 8, marginBottom: 44, lineHeight: 24 },
