@@ -44,7 +44,8 @@
         {
           "locationWhenInUsePermission": "Приложение использует геолокацию для построения маршрута до игровой комнаты."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "kidroom",
     "experiments": {
