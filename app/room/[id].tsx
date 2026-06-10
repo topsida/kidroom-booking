@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, Image, StyleSheet, TouchableOpacity,
-  Dimensions, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView, Platform,
+  Dimensions, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView,
+  Platform, Modal, TouchableWithoutFeedback, Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { supabase } from '@/lib/supabase';
 import { Room, Review } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
@@ -18,10 +21,13 @@ export default function RoomScreen() {
   const styles = useMemo(() => makeStyles(C), [C]);
   const router = useRouter();
 
+  const insets = useSafeAreaInsets();
+
   const [room, setRoom] = useState<Room | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [mapPickerVisible, setMapPickerVisible] = useState(false);
 
   // Текущий пользователь
   const [userId, setUserId] = useState<string | null>(null);
@@ -111,6 +117,41 @@ export default function RoomScreen() {
     ]);
   }
 
+  function handleAddressTap() {
+    Alert.alert(room!.address, undefined, [
+      { text: 'Скопировать адрес', onPress: () => Clipboard.setStringAsync(room!.address) },
+      { text: 'Открыть в навигаторе', onPress: () => setMapPickerVisible(true) },
+      { text: 'Отмена', style: 'cancel' },
+    ]);
+  }
+
+  async function launchYandex() {
+    setMapPickerVisible(false);
+    if (!room) return;
+    const lat = room.latitude;
+    const lon = room.longitude;
+    const scheme = lat && lon
+      ? `yandexmaps://maps.yandex.ru/?rtext=~${lat},${lon}&rtt=auto`
+      : `yandexmaps://maps.yandex.ru/?text=${encodeURIComponent(room.address)}`;
+    const web = lat && lon
+      ? `https://maps.yandex.ru/?rtext=~${lat},${lon}&rtt=auto`
+      : `https://maps.yandex.ru/?text=${encodeURIComponent(room.address)}`;
+    const canOpen = await Linking.canOpenURL(scheme);
+    Linking.openURL(canOpen ? scheme : web);
+  }
+
+  async function launchGoogle() {
+    setMapPickerVisible(false);
+    if (!room) return;
+    const lat = room.latitude;
+    const lon = room.longitude;
+    const query = lat && lon ? `${lat},${lon}` : encodeURIComponent(room.address);
+    const scheme = `comgooglemaps://?daddr=${query}&directionsmode=driving`;
+    const web = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+    const canOpen = await Linking.canOpenURL(scheme);
+    Linking.openURL(canOpen ? scheme : web);
+  }
+
   if (loading || !room) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={C.primary} /></View>;
   }
@@ -151,10 +192,10 @@ export default function RoomScreen() {
             </View>
           </View>
 
-          <View style={styles.infoRow}>
+          <TouchableOpacity style={styles.infoRow} onPress={handleAddressTap} activeOpacity={0.7}>
             <Ionicons name="location" size={15} color={C.primary} />
-            <Text style={styles.infoText}>{room.address}</Text>
-          </View>
+            <Text style={[styles.infoText, styles.infoTextLink]}>{room.address}</Text>
+          </TouchableOpacity>
 
           <View style={styles.infoRow}>
             <Ionicons name="time" size={15} color={C.primary} />
@@ -298,7 +339,7 @@ export default function RoomScreen() {
         </View>
 
         {/* Кнопка бронирования */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
           <TouchableOpacity
             style={styles.bookBtn}
             onPress={() => router.push({ pathname: '/booking/[roomId]', params: { roomId: room.id, roomName: room.name } })}
@@ -308,6 +349,31 @@ export default function RoomScreen() {
         </View>
 
       </ScrollView>
+
+      {/* Выбор навигатора */}
+      <Modal transparent visible={mapPickerVisible} animationType="fade" onRequestClose={() => setMapPickerVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setMapPickerVisible(false)}>
+          <View style={styles.pickerBackdrop} />
+        </TouchableWithoutFeedback>
+        <View style={styles.pickerDialog}>
+          <Text style={styles.pickerTitle}>Открыть в навигаторе</Text>
+          <TouchableOpacity style={styles.pickerRow} onPress={launchYandex} activeOpacity={0.75}>
+            <Image source={require('@/assets/yandex-maps.png')} style={styles.pickerIcon} />
+            <Text style={styles.pickerLabel}>Яндекс Карты</Text>
+            <Ionicons name="chevron-forward" size={18} color={C.border} />
+          </TouchableOpacity>
+          <View style={styles.pickerDivider} />
+          <TouchableOpacity style={styles.pickerRow} onPress={launchGoogle} activeOpacity={0.75}>
+            <Image source={{ uri: 'https://maps.gstatic.com/favicon3.ico' }} style={styles.pickerIcon} />
+            <Text style={styles.pickerLabel}>Google Maps</Text>
+            <Ionicons name="chevron-forward" size={18} color={C.border} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pickerCancel} onPress={() => setMapPickerVisible(false)}>
+            <Text style={[styles.pickerCancelText, { color: C.textLight }]}>Отмена</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
@@ -339,6 +405,7 @@ function makeStyles(C: ThemeColors) {
 
     infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     infoText: { fontSize: 14, color: C.textLight, flex: 1 },
+    infoTextLink: { color: C.primary, textDecorationLine: 'underline' },
 
     priceBox: { backgroundColor: C.primaryLight, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     priceLabel: { fontSize: 14, color: C.primary, fontWeight: '600' },
@@ -402,5 +469,20 @@ function makeStyles(C: ThemeColors) {
     footer: { padding: 20, paddingTop: 0 },
     bookBtn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
     bookBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+
+    // Диалог выбора навигатора
+    pickerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+    pickerDialog: {
+      position: 'absolute', bottom: 32, left: 20, right: 20,
+      backgroundColor: C.white, borderRadius: 18, overflow: 'hidden',
+      shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 8,
+    },
+    pickerTitle: { fontSize: 13, fontWeight: '600', color: C.textLight, textAlign: 'center', paddingTop: 16, paddingBottom: 8 },
+    pickerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 14 },
+    pickerIcon: { width: 24, height: 24, borderRadius: 6 },
+    pickerLabel: { flex: 1, fontSize: 16, fontWeight: '500', color: C.text },
+    pickerDivider: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginHorizontal: 20 },
+    pickerCancel: { padding: 16, alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border, marginTop: 4 },
+    pickerCancelText: { fontSize: 15, fontWeight: '600' },
   });
 }
