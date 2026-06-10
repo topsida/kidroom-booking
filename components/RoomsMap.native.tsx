@@ -100,20 +100,20 @@ function makeStyles(C: ThemeColors) {
     map: { flex: 1 },
 
     pin: {
-      backgroundColor: '#fff',
+      backgroundColor: '#E53935',
       borderRadius: 20,
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderWidth: 2,
-      borderColor: C.primary,
+      borderColor: '#B71C1C',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
       elevation: 4,
     },
-    pinSelected: { backgroundColor: C.primary },
-    pinText: { fontSize: 13, fontWeight: '700', color: C.primary },
+    pinSelected: { backgroundColor: '#B71C1C' },
+    pinText: { fontSize: 13, fontWeight: '700', color: '#fff' },
     pinTextSelected: { color: '#fff' },
 
     card: {
