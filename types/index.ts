@@ -9,6 +9,8 @@ export interface Room {
   working_hours_start: string;
   working_hours_end: string;
   owner_telegram_chat_id?: string;
+  latitude?: number;
+  longitude?: number;
   created_at: string;
 }
 

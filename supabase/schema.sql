@@ -26,6 +26,8 @@ create table public.rooms (
   working_hours_start time default '09:00',
   working_hours_end time default '21:00',
   owner_telegram_chat_id text,
+  latitude double precision,
+  longitude double precision,
   created_at timestamptz default now() not null
 );
 alter table public.rooms enable row level security;
