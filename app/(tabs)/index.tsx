@@ -8,7 +8,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Room, RoomFilters } from '@/types';
+import { Room, RoomFilters, PricingRule } from '@/types';
+import { getMinPrice } from '@/lib/pricing';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { RoomsMap } from '@/components/RoomsMap';
@@ -32,6 +33,7 @@ export default function HomeScreen() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filtered, setFiltered] = useState<Room[]>([]);
+  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<RoomFilters>(DEFAULT_FILTERS);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -107,8 +109,12 @@ export default function HomeScreen() {
   }, [search, filters, rooms]);
 
   async function loadRooms() {
-    const { data } = await supabase.from('rooms').select('*').order('rating', { ascending: false });
-    setRooms(data ?? []);
+    const [roomsRes, rulesRes] = await Promise.all([
+      supabase.from('rooms').select('*').order('rating', { ascending: false }),
+      supabase.from('pricing_rules').select('*').eq('is_active', true),
+    ]);
+    setRooms(roomsRes.data ?? []);
+    setPricingRules(rulesRes.data ?? []);
     setLoading(false);
     setRefreshing(false);
   }
@@ -194,7 +200,15 @@ export default function HomeScreen() {
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
-          renderItem={({ item }) => <RoomCard room={item} />}
+          renderItem={({ item }) => (
+              <RoomCard
+                room={item}
+                minPrice={getMinPrice(
+                  item.price_per_hour,
+                  pricingRules.filter(r => r.room_id === item.id),
+                )}
+              />
+            )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={

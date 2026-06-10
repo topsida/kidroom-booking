@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Room } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 
-export function RoomCard({ room }: { room: Room }) {
+export function RoomCard({ room, minPrice }: { room: Room; minPrice?: number }) {
   const router = useRouter();
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
@@ -34,7 +34,16 @@ export function RoomCard({ room }: { room: Room }) {
           <Text style={styles.address} numberOfLines={1}>{room.address}</Text>
         </View>
         <View style={styles.footer}>
-          <Text style={styles.price}>{room.price_per_hour} ₽<Text style={styles.perHour}>/час</Text></Text>
+          <View style={styles.priceWrap}>
+              {minPrice !== undefined && minPrice < room.price_per_hour ? (
+                <>
+                  <Text style={styles.priceFrom}>от </Text>
+                  <Text style={styles.price}>{minPrice} ₽<Text style={styles.perHour}>/час</Text></Text>
+                </>
+              ) : (
+                <Text style={styles.price}>{room.price_per_hour} ₽<Text style={styles.perHour}>/час</Text></Text>
+              )}
+            </View>
           <View style={styles.pill}><Text style={styles.pillText}>Забронировать</Text></View>
         </View>
       </View>
@@ -54,6 +63,8 @@ function makeStyles(C: ThemeColors) {
     addrRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     address: { fontSize: 13, color: C.textLight, flex: 1 },
     footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
+    priceWrap: { flexDirection: 'row', alignItems: 'baseline' },
+    priceFrom: { fontSize: 13, color: C.textLight, fontWeight: '500' },
     price: { fontSize: 20, fontWeight: '800', color: C.primary },
     perHour: { fontSize: 13, fontWeight: '400', color: C.textLight },
     pill: { backgroundColor: C.primaryLight, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },

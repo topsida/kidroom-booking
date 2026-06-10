@@ -45,6 +45,17 @@ export interface Booking {
   rooms?: Room;
 }
 
+export interface PricingRule {
+  id: string;
+  room_id: string;
+  name: string;
+  day_type: 'weekday' | 'weekend' | 'all';
+  time_from: string;
+  time_to: string;
+  price_modifier: number;
+  is_active: boolean;
+}
+
 export interface UserProfile {
   id: string;
   phone: string;
