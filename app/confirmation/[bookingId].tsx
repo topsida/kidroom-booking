@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { sendTelegramMessage, bookingConfirmationText, ownerBookingNotificationText } from '@/lib/telegram';
 import { Booking } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
+import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 
 export default function ConfirmationScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
@@ -135,6 +136,8 @@ export default function ConfirmationScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ConfettiCelebration />
     </SafeAreaView>
   );
 }

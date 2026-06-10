@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 function RootContent() {
   const { session, loading } = useAuth();
@@ -23,11 +23,7 @@ function RootContent() {
   }, [session, loading]);
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
