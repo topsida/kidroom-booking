@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 function RootContent() {
@@ -59,7 +60,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootContent />
+        <FavoritesProvider>
+          <RootContent />
+        </FavoritesProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

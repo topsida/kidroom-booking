@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { Room, Review } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { StarRating } from '@/components/StarRating';
+import { useFavorites } from '@/context/FavoritesContext';
 
 const W = Dimensions.get('window').width;
 
@@ -22,6 +23,8 @@ export default function RoomScreen() {
   const router = useRouter();
 
   const insets = useSafeAreaInsets();
+
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const [room, setRoom] = useState<Room | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -189,9 +192,22 @@ export default function RoomScreen() {
           {/* Заголовок */}
           <View style={styles.titleRow}>
             <Text style={styles.name}>{room.name}</Text>
-            <View style={styles.ratingBadge}>
-              <Ionicons name="star" size={13} color={C.star} />
-              <Text style={styles.ratingText}>{room.rating.toFixed(1)}</Text>
+            <View style={styles.titleActions}>
+              <View style={styles.ratingBadge}>
+                <Ionicons name="star" size={13} color={C.star} />
+                <Text style={styles.ratingText}>{room.rating.toFixed(1)}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => toggleFavorite(room.id)}
+                hitSlop={8}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isFavorite(room.id) ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={isFavorite(room.id) ? '#FF6B9D' : C.textLight}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -403,6 +419,7 @@ function makeStyles(C: ThemeColors) {
 
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     name: { fontSize: 22, fontWeight: '800', color: C.text, flex: 1, marginRight: 8 },
+    titleActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9E6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
     ratingText: { fontSize: 13, fontWeight: '700', color: '#9A7000' },
 

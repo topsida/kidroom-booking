@@ -4,11 +4,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Room } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
+import { useFavorites } from '@/context/FavoritesContext';
 
 export function RoomCard({ room, minPrice }: { room: Room; minPrice?: number }) {
   const router = useRouter();
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const fav = isFavorite(room.id);
 
   return (
     <TouchableOpacity
@@ -16,11 +19,25 @@ export function RoomCard({ room, minPrice }: { room: Room; minPrice?: number }) 
       onPress={() => router.push({ pathname: '/room/[id]', params: { id: room.id } })}
       activeOpacity={0.92}
     >
-      <Image
-        source={{ uri: room.photos[0] ?? 'https://placehold.co/400x200/FFE0ED/FF6B9D?text=KidRoom' }}
-        style={styles.photo}
-        resizeMode="cover"
-      />
+      <View>
+        <Image
+          source={{ uri: room.photos[0] ?? 'https://placehold.co/400x200/FFE0ED/FF6B9D?text=KidRoom' }}
+          style={styles.photo}
+          resizeMode="cover"
+        />
+        <TouchableOpacity
+          style={styles.favBtn}
+          onPress={() => toggleFavorite(room.id)}
+          hitSlop={8}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={fav ? 'heart' : 'heart-outline'}
+            size={20}
+            color={fav ? '#FF6B9D' : '#fff'}
+          />
+        </TouchableOpacity>
+      </View>
       <View style={styles.info}>
         <View style={styles.titleRow}>
           <Text style={styles.name} numberOfLines={1}>{room.name}</Text>
@@ -55,6 +72,7 @@ function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     card: { backgroundColor: C.white, borderRadius: 16, marginBottom: 16, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10 },
     photo: { width: '100%', height: 185 },
+    favBtn: { position: 'absolute', top: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'center', alignItems: 'center' },
     info: { padding: 14, gap: 7 },
     titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     name: { fontSize: 17, fontWeight: '700', color: C.text, flex: 1, marginRight: 8 },
