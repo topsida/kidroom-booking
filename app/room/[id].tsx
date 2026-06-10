@@ -169,7 +169,10 @@ export default function RoomScreen() {
             horizontal pagingEnabled showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={e => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / W))}
           >
-            {room.photos.map((uri, i) => (
+            {(room.photos.length > 0
+              ? room.photos
+              : ['https://placehold.co/400x270/FFE0ED/FF6B9D?text=KidRoom']
+            ).map((uri, i) => (
               <Image key={i} source={{ uri }} style={[styles.photo, { width: W }]} resizeMode="cover" />
             ))}
           </ScrollView>

@@ -26,7 +26,7 @@ function RootContent() {
     } else if (session && inAuth) {
       router.replace('/(tabs)');
     }
-  }, [session, loading]);
+  }, [session, loading, minLoadDone, segments]);
 
   if (loading || !minLoadDone) {
     return <LoadingScreen />;

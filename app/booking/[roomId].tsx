@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { Room, PricingRule } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
-import { getSlotPrice } from '@/lib/pricing';
+import { getSlotPrice, localDateStr } from '@/lib/pricing';
 
 LocaleConfig.locales['ru'] = {
   monthNames: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
@@ -35,7 +35,7 @@ export default function BookingScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
 
   useEffect(() => {
     supabase.from('rooms').select('*').eq('id', roomId).single()

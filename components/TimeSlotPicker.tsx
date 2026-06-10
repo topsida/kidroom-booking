@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { PricingRule } from '@/types';
-import { getSlotPrice } from '@/lib/pricing';
+import { getSlotPrice, localDateStr } from '@/lib/pricing';
 
 interface Props {
   workStart: string;
@@ -80,7 +80,7 @@ function generateSlots(start: string, end: string, date: string): string[] {
   const slots: string[] = [];
   const sh = parseInt(start.split(':')[0], 10);
   const eh = parseInt(end.split(':')[0], 10);
-  const isToday = date === new Date().toISOString().split('T')[0];
+  const isToday = date === localDateStr();
   const nowH = new Date().getHours();
   for (let h = sh; h < eh; h++) {
     if (isToday && h <= nowH) continue;

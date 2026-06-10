@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  ActivityIndicator, RefreshControl, TouchableOpacity,
+  ActivityIndicator, RefreshControl, TouchableOpacity, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -19,14 +19,16 @@ export default function BookingsScreen() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<Tab>('active');
 
   useFocusEffect(useCallback(() => { loadBookings(); }, []));
 
-  async function loadBookings() {
-    setLoading(true);
+  async function loadBookings(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!user) { setLoading(false); setRefreshing(false); return; }
     const { data } = await supabase
       .from('bookings')
       .select('*, rooms(*)')
@@ -34,6 +36,7 @@ export default function BookingsScreen() {
       .order('date', { ascending: false });
     setBookings(data ?? []);
     setLoading(false);
+    setRefreshing(false);
   }
 
   async function cancelBooking(id: string) {
@@ -60,7 +63,11 @@ export default function BookingsScreen() {
       }
     }
 
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id);
+    const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id);
+    if (error) {
+      Alert.alert('Ошибка', 'Не удалось отменить бронирование. Попробуйте ещё раз.');
+      return;
+    }
     loadBookings();
   }
 
@@ -105,7 +112,7 @@ export default function BookingsScreen() {
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadBookings} tintColor={C.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadBookings(true)} tintColor={C.primary} />}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>{tab === 'active' ? '📅' : '🗂️'}</Text>
