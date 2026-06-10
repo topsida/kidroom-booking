@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaVi
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { sendTelegramMessage, bookingConfirmationText } from '@/lib/telegram';
+import { sendTelegramMessage, bookingConfirmationText, ownerBookingNotificationText } from '@/lib/telegram';
 import { Booking } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 
@@ -21,31 +21,76 @@ export default function ConfirmationScreen() {
   useEffect(() => { load(); }, [bookingId]);
 
   async function load() {
-    const { data } = await supabase
+    console.log('[Confirmation] load() started, bookingId:', bookingId);
+
+    const { data, error: bookingError } = await supabase
       .from('bookings').select('*, rooms(*)').eq('id', bookingId).single();
+    console.log('[Confirmation] booking fetch error:', bookingError?.message ?? 'none');
+    console.log('[Confirmation] booking data:', data ? `id=${data.id}, room=${data.rooms?.name}` : 'null');
+    console.log('[Confirmation] rooms.owner_telegram_chat_id:', data?.rooms?.owner_telegram_chat_id ?? '(not set)');
+
     setBooking(data);
     setLoading(false);
 
-    if (data?.rooms) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('users').select('telegram_chat_id').eq('id', user.id).single();
-        if (profile?.telegram_chat_id) {
-          await sendTelegramMessage(
-            profile.telegram_chat_id,
-            bookingConfirmationText({
-              roomName: data.rooms.name,
-              date: new Date(data.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
-              time: data.time_slot.slice(0, 5),
-              childName: data.child_name,
-              childAge: data.child_age,
-              price: data.rooms.price_per_hour,
-            })
-          );
-          setTelegramSent(true);
-        }
-      }
+    if (!data?.rooms) {
+      console.warn('[Confirmation] ABORT: no rooms data in booking');
+      return;
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('[Confirmation] auth.getUser error:', userError?.message ?? 'none');
+    console.log('[Confirmation] user:', user ? `id=${user.id}` : 'null');
+
+    if (!user) {
+      console.warn('[Confirmation] ABORT: no authenticated user');
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('users').select('telegram_chat_id, name, phone').eq('id', user.id).single();
+    console.log('[Confirmation] profile fetch error:', profileError?.message ?? 'none');
+    console.log('[Confirmation] profile:', profile
+      ? `name="${profile.name}", phone="${profile.phone}", telegram_chat_id="${profile.telegram_chat_id ?? '(not set)'}"`
+      : 'null');
+
+    const dateFormatted = new Date(data.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Уведомление пользователю
+    if (profile?.telegram_chat_id) {
+      console.log('[Confirmation] sending USER notification to:', profile.telegram_chat_id);
+      await sendTelegramMessage(
+        profile.telegram_chat_id,
+        bookingConfirmationText({
+          roomName: data.rooms.name,
+          date: dateFormatted,
+          time: data.time_slot.slice(0, 5),
+          childName: data.child_name,
+          childAge: data.child_age,
+          price: data.rooms.price_per_hour,
+        })
+      );
+      setTelegramSent(true);
+    } else {
+      console.log('[Confirmation] SKIP user notification: no telegram_chat_id in profile');
+    }
+
+    // Уведомление владельцу комнаты
+    if (data.rooms.owner_telegram_chat_id) {
+      console.log('[Confirmation] sending OWNER notification to:', data.rooms.owner_telegram_chat_id);
+      await sendTelegramMessage(
+        data.rooms.owner_telegram_chat_id,
+        ownerBookingNotificationText({
+          roomName: data.rooms.name,
+          clientName: profile?.name ?? '',
+          phone: profile?.phone ?? '',
+          date: dateFormatted,
+          time: data.time_slot.slice(0, 5),
+          childName: data.child_name,
+          childAge: data.child_age,
+        })
+      );
+    } else {
+      console.log('[Confirmation] SKIP owner notification: owner_telegram_chat_id not set for this room');
     }
   }
 

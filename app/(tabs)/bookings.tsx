@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { sendTelegramMessage, ownerCancellationNotificationText } from '@/lib/telegram';
 import { Booking } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { BookingCard } from '@/components/BookingCard';
@@ -36,6 +37,29 @@ export default function BookingsScreen() {
   }
 
   async function cancelBooking(id: string) {
+    const booking = bookings.find(b => b.id === id);
+
+    if (booking?.rooms?.owner_telegram_chat_id) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('users').select('name, phone').eq('id', user.id).single();
+        const dateFormatted = new Date(booking.date).toLocaleDateString('ru-RU', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        });
+        await sendTelegramMessage(
+          booking.rooms.owner_telegram_chat_id,
+          ownerCancellationNotificationText({
+            roomName: booking.rooms.name,
+            clientName: profile?.name ?? '',
+            phone: profile?.phone ?? '',
+            date: dateFormatted,
+            time: booking.time_slot.slice(0, 5),
+          })
+        );
+      }
+    }
+
     await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id);
     loadBookings();
   }

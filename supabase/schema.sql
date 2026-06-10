@@ -25,6 +25,7 @@ create table public.rooms (
   photos text[] default '{}',
   working_hours_start time default '09:00',
   working_hours_end time default '21:00',
+  owner_telegram_chat_id text,
   created_at timestamptz default now() not null
 );
 alter table public.rooms enable row level security;

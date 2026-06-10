@@ -8,6 +8,7 @@ export interface Room {
   photos: string[];
   working_hours_start: string;
   working_hours_end: string;
+  owner_telegram_chat_id?: string;
   created_at: string;
 }
 
