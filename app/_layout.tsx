@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,9 +11,15 @@ function RootContent() {
   const { colors, theme } = useTheme();
   const segments = useSegments();
   const router = useRouter();
+  const [minLoadDone, setMinLoadDone] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    const t = setTimeout(() => setMinLoadDone(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !minLoadDone) return;
     const inAuth = segments[0] === '(auth)';
     if (!session && !inAuth) {
       router.replace('/(auth)/login');
@@ -22,7 +28,7 @@ function RootContent() {
     }
   }, [session, loading]);
 
-  if (loading) {
+  if (loading || !minLoadDone) {
     return <LoadingScreen />;
   }
 
