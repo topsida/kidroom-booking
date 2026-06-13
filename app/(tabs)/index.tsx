@@ -6,6 +6,7 @@ import {
   Animated, PanResponder,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Room, RoomFilters, PricingRule } from '@/types';
@@ -30,6 +31,8 @@ export default function HomeScreen() {
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const flatListRef = useRef<FlatList>(null);
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filtered, setFiltered] = useState<Room[]>([]);
@@ -82,6 +85,20 @@ export default function HomeScreen() {
   }
 
   useEffect(() => { loadRooms(); }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress' as any, () => {
+      if (!navigation.isFocused()) return;
+      setSearch('');
+      setFilters(DEFAULT_FILTERS);
+      setViewMode('list');
+      setPanelOpen(false);
+      panY.setValue(PANEL_HEIGHT);
+      backdropOpacity.setValue(0);
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     let result = rooms;
@@ -198,6 +215,7 @@ export default function HomeScreen() {
       {/* Список или карта */}
       {viewMode === 'list' ? (
         <FlatList
+          ref={flatListRef}
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
