@@ -26,7 +26,7 @@ export default function ConfirmationScreen() {
     console.log('[Confirmation] load() started, bookingId:', bookingId);
 
     const { data } = await supabase
-      .from('bookings').select('*, rooms(*)').eq('id', bookingId).single();
+      .from('bookings').select('*, rooms(*), quests(*)').eq('id', bookingId).single();
 
     setBooking(data);
     setLoading(false);
@@ -41,14 +41,14 @@ export default function ConfirmationScreen() {
 
     const dateFormatted = new Date(data.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    // Уведомление пользователю
-    const teamPrice = data.rooms.price_per_team ?? data.rooms.price_per_hour;
+    const questName = data.quests?.name ?? data.rooms.name;
+    const teamPrice = data.quests?.price_per_team ?? data.rooms.price_per_team ?? data.rooms.price_per_hour;
 
     if (profile?.telegram_chat_id) {
       await sendTelegramMessage(
         profile.telegram_chat_id,
         bookingConfirmationText({
-          roomName: data.rooms.name,
+          roomName: questName,
           date: dateFormatted,
           time: data.time_slot.slice(0, 5),
           playersCount: data.players_count,
@@ -62,7 +62,7 @@ export default function ConfirmationScreen() {
       await sendTelegramMessage(
         data.rooms.owner_telegram_chat_id,
         ownerBookingNotificationText({
-          roomName: data.rooms.name,
+          roomName: questName,
           clientName: profile?.name ?? '',
           phone: profile?.phone ?? '',
           date: dateFormatted,
@@ -90,13 +90,16 @@ export default function ConfirmationScreen() {
           <Text style={styles.subtitle}>Ждём вас! 🌟</Text>
 
           <View style={styles.card}>
-            <Row icon="home-outline" label="Квест" value={booking.rooms?.name ?? ''} rowStyles={rowStyles} />
+            {booking.quests?.name && (
+              <Row icon="game-controller-outline" label="Квест" value={booking.quests.name} rowStyles={rowStyles} />
+            )}
+            <Row icon="home-outline" label="Место" value={booking.rooms?.name ?? ''} rowStyles={rowStyles} />
             <Row icon="location-outline" label="Адрес" value={booking.rooms?.address ?? ''} rowStyles={rowStyles} />
             <Row icon="calendar-outline" label="Дата" value={dateFormatted} rowStyles={rowStyles} />
             <Row icon="time-outline" label="Время" value={booking.time_slot.slice(0, 5)} rowStyles={rowStyles} />
             <Row icon="people-outline" label="Игроки" value={`${booking.players_count} чел`} rowStyles={rowStyles} />
             <Row icon="cash-outline" label="Стоимость"
-              value={`${(booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽`}
+              value={`${(booking.quests?.price_per_team ?? booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽`}
               last rowStyles={rowStyles} />
           </View>
 

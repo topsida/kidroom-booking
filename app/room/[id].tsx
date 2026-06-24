@@ -9,34 +9,191 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { supabase } from '@/lib/supabase';
-import { Room, Review } from '@/types';
+import { Room, Quest, Review, Genre, Difficulty } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { StarRating } from '@/components/StarRating';
 import { useFavorites } from '@/context/FavoritesContext';
 
 const W = Dimensions.get('window').width;
 
+// ── визуальные словари ────────────────────────────────────────────────────────
+
+const GENRE_META: Record<Genre, { emoji: string; bg: string }> = {
+  'хоррор':     { emoji: '👻', bg: '#7B1010' },
+  'детектив':   { emoji: '🔍', bg: '#1A3A5C' },
+  'приключение':{ emoji: '⚔️', bg: '#1A5C2A' },
+  'детский':    { emoji: '🎈', bg: '#C04A00' },
+  'VR':         { emoji: '🥽', bg: '#4A0E8F' },
+  'перформанс': { emoji: '🎭', bg: '#8F0E6A' },
+};
+
+const DIFF_COLOR: Record<Difficulty, string> = {
+  'новичок': '#1A8A3A',
+  'средний': '#B06000',
+  'опытный': '#B01010',
+};
+
+const RATING_CAPTIONS: Record<number, string> = {
+  1: 'Ужасно 😞', 2: 'Плохо 😕', 3: 'Нормально 😐', 4: 'Хорошо 😊', 5: 'Отлично! 🎉',
+};
+
+// ── карточка одного квеста ────────────────────────────────────────────────────
+
+function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) {
+  const router = useRouter();
+  const genre = quest.genre ? GENRE_META[quest.genre] : null;
+  const diffColor = quest.difficulty ? DIFF_COLOR[quest.difficulty] : undefined;
+  const scary = quest.is_scary && quest.is_scary !== 'нет' ? quest.is_scary : null;
+
+  const photo = quest.photos?.[0]
+    ?? 'https://placehold.co/400x160/1A3A5C/FFFFFF?text=Квест';
+
+  const s = useMemo(() => questStyles(C), [C]);
+
+  return (
+    <View style={s.card}>
+      {/* Фото квеста с бейджем жанра */}
+      <View>
+        <Image source={{ uri: photo }} style={s.photo} resizeMode="cover" />
+        {genre && (
+          <View style={[s.genreBadge, { backgroundColor: genre.bg }]}>
+            <Text style={s.genreText}>{genre.emoji} {quest.genre}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={s.body}>
+        {/* Название */}
+        <Text style={s.name}>{quest.name}</Text>
+
+        {/* Описание */}
+        {quest.description ? (
+          <Text style={s.desc} numberOfLines={2}>{quest.description}</Text>
+        ) : null}
+
+        {/* Характеристики */}
+        <View style={s.specsRow}>
+          {quest.duration_minutes != null && (
+            <View style={s.spec}>
+              <Ionicons name="time-outline" size={13} color={C.textLight} />
+              <Text style={s.specText}>{quest.duration_minutes} мин</Text>
+            </View>
+          )}
+          {quest.min_players != null && quest.max_players != null && (
+            <View style={s.spec}>
+              <Ionicons name="people-outline" size={13} color={C.textLight} />
+              <Text style={s.specText}>{quest.min_players}–{quest.max_players} чел</Text>
+            </View>
+          )}
+          {quest.difficulty && diffColor && (
+            <View style={[s.diffBadge, { backgroundColor: diffColor + '1A' }]}>
+              <Text style={[s.diffText, { color: diffColor }]}>{quest.difficulty}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Теги */}
+        {(quest.age_limit || quest.has_actor || scary) ? (
+          <View style={s.tagsRow}>
+            {quest.age_limit && (
+              <View style={s.tag}><Text style={s.tagText}>{quest.age_limit}</Text></View>
+            )}
+            {quest.has_actor && (
+              <View style={[s.tag, { backgroundColor: C.primaryLight, borderColor: C.primary }]}>
+                <Text style={[s.tagText, { color: C.primary }]}>🎭 Актёр</Text>
+              </View>
+            )}
+            {scary === 'немного' && (
+              <View style={[s.tag, { backgroundColor: '#FFF0E0', borderColor: '#E07000' }]}>
+                <Text style={[s.tagText, { color: '#9A4F00' }]}>😨 Немного страшно</Text>
+              </View>
+            )}
+            {scary === 'хоррор' && (
+              <View style={[s.tag, { backgroundColor: '#FFE4E4', borderColor: '#FF6666' }]}>
+                <Text style={[s.tagText, { color: '#B01010' }]}>💀 Хоррор</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {/* Цена + кнопка */}
+        <View style={s.footer}>
+          <View>
+            <Text style={s.price}>{quest.price_per_team.toLocaleString('ru-RU')} ₽</Text>
+            <Text style={s.perLabel}>за команду</Text>
+          </View>
+          <TouchableOpacity
+            style={s.bookBtn}
+            onPress={() => router.push({
+              pathname: '/booking/[questId]',
+              params: { questId: quest.id },
+            })}
+            activeOpacity={0.85}
+          >
+            <Text style={s.bookBtnText}>Забронировать</Text>
+            <Ionicons name="arrow-forward" size={15} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function questStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: C.white, borderRadius: 16,
+      overflow: 'hidden', borderWidth: 1, borderColor: C.border,
+      elevation: 2,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6,
+    },
+    photo: { width: '100%', height: 150 },
+    genreBadge: {
+      position: 'absolute', top: 10, left: 10,
+      paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+    },
+    genreText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    body: { padding: 14, gap: 8 },
+    name: { fontSize: 18, fontWeight: '800', color: C.text },
+    desc: { fontSize: 13, color: C.textLight, lineHeight: 19 },
+    specsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+    spec: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    specText: { fontSize: 13, color: C.textLight },
+    diffBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+    diffText: { fontSize: 12, fontWeight: '600' },
+    tagsRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+    tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.background },
+    tagText: { fontSize: 12, fontWeight: '600', color: C.text },
+    footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+    price: { fontSize: 22, fontWeight: '800', color: C.primary },
+    perLabel: { fontSize: 12, color: C.textLight },
+    bookBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: C.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
+    },
+    bookBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  });
+}
+
+// ── главный экран организации ─────────────────────────────────────────────────
+
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
   const router = useRouter();
-
   const insets = useSafeAreaInsets();
-
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [room, setRoom] = useState<Room | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [mapPickerVisible, setMapPickerVisible] = useState(false);
 
-  // Текущий пользователь
   const [userId, setUserId] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
-
-  // Состояние формы отзыва
   const [myReview, setMyReview] = useState<Review | null>(null);
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(0);
@@ -45,13 +202,16 @@ export default function RoomScreen() {
 
   useEffect(() => {
     async function load() {
-      const [roomRes, reviewsRes, authRes] = await Promise.all([
+      const [roomRes, questsRes, reviewsRes, authRes] = await Promise.all([
         supabase.from('rooms').select('*').eq('id', id).single(),
+        supabase.from('quests').select('*').eq('room_id', id).eq('is_active', true).order('price_per_team'),
         supabase.from('reviews').select('*, users(name)').eq('room_id', id).order('created_at', { ascending: false }),
         supabase.auth.getUser(),
       ]);
 
       setRoom(roomRes.data);
+      setQuests(questsRes.data ?? []);
+
       const allReviews = reviewsRes.data ?? [];
       setReviews(allReviews);
 
@@ -61,10 +221,7 @@ export default function RoomScreen() {
         setIsGuest(user.is_anonymous === true);
         const mine = allReviews.find(r => r.user_id === user.id) ?? null;
         setMyReview(mine);
-        if (mine) {
-          setRating(mine.rating);
-          setComment(mine.comment ?? '');
-        }
+        if (mine) { setRating(mine.rating); setComment(mine.comment ?? ''); }
       }
 
       setLoading(false);
@@ -73,50 +230,33 @@ export default function RoomScreen() {
   }, [id]);
 
   async function reloadReviews() {
-    const { data } = await supabase
-      .from('reviews')
-      .select('*, users(name)')
-      .eq('room_id', id)
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('reviews').select('*, users(name)').eq('room_id', id).order('created_at', { ascending: false });
     const all = data ?? [];
     setReviews(all);
-    if (userId) {
-      const mine = all.find(r => r.user_id === userId) ?? null;
-      setMyReview(mine);
-    }
+    if (userId) setMyReview(all.find(r => r.user_id === userId) ?? null);
   }
 
   async function submitReview() {
-    if (rating === 0) { Alert.alert('Выберите оценку', 'Нажмите на звёздочки, чтобы поставить оценку'); return; }
-
+    if (rating === 0) { Alert.alert('Выберите оценку'); return; }
     setSubmitting(true);
     const { error } = await supabase.from('reviews').upsert(
       { room_id: id, user_id: userId, rating, comment: comment.trim() },
       { onConflict: 'room_id,user_id' },
     );
     setSubmitting(false);
-
     if (error) { Alert.alert('Ошибка', error.message); return; }
-
     await reloadReviews();
     setEditing(false);
   }
 
   async function deleteReview() {
-    Alert.alert('Удалить отзыв?', 'Это действие нельзя отменить', [
+    Alert.alert('Удалить отзыв?', undefined, [
       { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить', style: 'destructive',
-        onPress: async () => {
-          await supabase.from('reviews').delete()
-            .eq('room_id', id).eq('user_id', userId!);
-          setMyReview(null);
-          setRating(0);
-          setComment('');
-          setEditing(false);
-          reloadReviews();
-        },
-      },
+      { text: 'Удалить', style: 'destructive', onPress: async () => {
+        await supabase.from('reviews').delete().eq('room_id', id).eq('user_id', userId!);
+        setMyReview(null); setRating(0); setComment(''); setEditing(false);
+        reloadReviews();
+      }},
     ]);
   }
 
@@ -131,28 +271,22 @@ export default function RoomScreen() {
   async function launchYandex() {
     setMapPickerVisible(false);
     if (!room) return;
-    const lat = room.latitude;
-    const lon = room.longitude;
-    const scheme = lat && lon
-      ? `yandexmaps://maps.yandex.ru/?rtext=~${lat},${lon}&rtt=auto`
+    const scheme = room.latitude && room.longitude
+      ? `yandexmaps://maps.yandex.ru/?rtext=~${room.latitude},${room.longitude}&rtt=auto`
       : `yandexmaps://maps.yandex.ru/?text=${encodeURIComponent(room.address)}`;
-    const web = lat && lon
-      ? `https://maps.yandex.ru/?rtext=~${lat},${lon}&rtt=auto`
+    const web = room.latitude && room.longitude
+      ? `https://maps.yandex.ru/?rtext=~${room.latitude},${room.longitude}&rtt=auto`
       : `https://maps.yandex.ru/?text=${encodeURIComponent(room.address)}`;
-    const canOpen = await Linking.canOpenURL(scheme);
-    Linking.openURL(canOpen ? scheme : web);
+    Linking.openURL((await Linking.canOpenURL(scheme)) ? scheme : web);
   }
 
   async function launchGoogle() {
     setMapPickerVisible(false);
     if (!room) return;
-    const lat = room.latitude;
-    const lon = room.longitude;
-    const query = lat && lon ? `${lat},${lon}` : encodeURIComponent(room.address);
+    const query = room.latitude && room.longitude ? `${room.latitude},${room.longitude}` : encodeURIComponent(room.address);
     const scheme = `comgooglemaps://?daddr=${query}&directionsmode=driving`;
     const web = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
-    const canOpen = await Linking.canOpenURL(scheme);
-    Linking.openURL(canOpen ? scheme : web);
+    Linking.openURL((await Linking.canOpenURL(scheme)) ? scheme : web);
   }
 
   if (loading || !room) {
@@ -160,28 +294,25 @@ export default function RoomScreen() {
   }
 
   const otherReviews = reviews.filter(r => r.user_id !== userId);
-  const showForm = !myReview || editing;
+  const orgPhotos = room.photos.length > 0
+    ? room.photos
+    : ['https://placehold.co/400x270/1A3A5C/FFFFFF?text=КвестРум'];
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-        {/* Фотогалерея */}
+        {/* Фотогалерея организации */}
         <View>
-          <ScrollView
-            horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / W))}
-          >
-            {(room.photos.length > 0
-              ? room.photos
-              : ['https://placehold.co/400x270/FFE0ED/FF6B9D?text=KidRoom']
-            ).map((uri, i) => (
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={e => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / W))}>
+            {orgPhotos.map((uri, i) => (
               <Image key={i} source={{ uri }} style={[styles.photo, { width: W }]} resizeMode="cover" />
             ))}
           </ScrollView>
-          {room.photos.length > 1 && (
+          {orgPhotos.length > 1 && (
             <View style={styles.dots}>
-              {room.photos.map((_, i) => (
+              {orgPhotos.map((_, i) => (
                 <View key={i} style={[styles.dot, i === photoIndex && styles.dotActive]} />
               ))}
             </View>
@@ -189,7 +320,8 @@ export default function RoomScreen() {
         </View>
 
         <View style={styles.content}>
-          {/* Заголовок */}
+
+          {/* Заголовок организации */}
           <View style={styles.titleRow}>
             <Text style={styles.name}>{room.name}</Text>
             <View style={styles.titleActions}>
@@ -197,11 +329,7 @@ export default function RoomScreen() {
                 <Ionicons name="star" size={13} color={C.star} />
                 <Text style={styles.ratingText}>{room.rating.toFixed(1)}</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => toggleFavorite(room.id)}
-                hitSlop={8}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity onPress={() => toggleFavorite(room.id)} hitSlop={8} activeOpacity={0.7}>
                 <Ionicons
                   name={isFavorite(room.id) ? 'heart' : 'heart-outline'}
                   size={26}
@@ -223,64 +351,33 @@ export default function RoomScreen() {
             </Text>
           </View>
 
-          <View style={styles.priceBox}>
-            <Text style={styles.priceLabel}>Цена за команду</Text>
-            <Text style={styles.price}>{(room.price_per_team ?? room.price_per_hour).toLocaleString('ru-RU')} ₽</Text>
+          {room.description ? (
+            <Text style={styles.description}>{room.description}</Text>
+          ) : null}
+
+          {/* ── Список квестов ── */}
+          <View style={styles.questsHeader}>
+            <Text style={styles.sectionTitle}>Квесты</Text>
+            {quests.length > 0 && (
+              <View style={styles.questCountBadge}>
+                <Text style={styles.questCountText}>{quests.length}</Text>
+              </View>
+            )}
           </View>
 
-          {/* Характеристики квеста */}
-          {(room.genre || room.difficulty || room.age_limit || room.duration_minutes) && (
-            <View style={styles.questGrid}>
-              {room.genre && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Жанр</Text>
-                  <Text style={styles.questItemValue}>{room.genre}</Text>
-                </View>
-              )}
-              {room.difficulty && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Сложность</Text>
-                  <Text style={styles.questItemValue}>{room.difficulty}</Text>
-                </View>
-              )}
-              {room.age_limit && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Возраст</Text>
-                  <Text style={styles.questItemValue}>{room.age_limit}</Text>
-                </View>
-              )}
-              {room.duration_minutes && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Длительность</Text>
-                  <Text style={styles.questItemValue}>{room.duration_minutes} мин</Text>
-                </View>
-              )}
-              {room.min_players && room.max_players && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Игроки</Text>
-                  <Text style={styles.questItemValue}>{room.min_players}–{room.max_players} чел</Text>
-                </View>
-              )}
-              {room.has_actor != null && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Актёр</Text>
-                  <Text style={styles.questItemValue}>{room.has_actor ? '🎭 Да' : 'Нет'}</Text>
-                </View>
-              )}
-              {room.is_scary && (
-                <View style={styles.questItem}>
-                  <Text style={styles.questItemLabel}>Страшность</Text>
-                  <Text style={styles.questItemValue}>
-                    {room.is_scary === 'нет' ? '😊 Нет' : room.is_scary === 'немного' ? '😨 Немного' : '💀 Хоррор'}
-                  </Text>
-                </View>
-              )}
+          {quests.length === 0 ? (
+            <View style={styles.emptyQuests}>
+              <Text style={styles.emptyQuestsText}>Квесты скоро появятся</Text>
+            </View>
+          ) : (
+            <View style={styles.questsList}>
+              {quests.map(q => (
+                <QuestCard key={q.id} quest={q} colors={C} />
+              ))}
             </View>
           )}
 
-          <Text style={styles.description}>{room.description}</Text>
-
-          {/* ── Раздел отзывов ── */}
+          {/* ── Отзывы ── */}
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionTitle}>
               Отзывы{reviews.length > 0 ? ` (${reviews.length})` : ''}
@@ -293,23 +390,17 @@ export default function RoomScreen() {
             )}
           </View>
 
-          {/* Блок "оставить/ваш отзыв" */}
           {!userId || isGuest ? (
             <View style={styles.authHint}>
               <Ionicons name="person-circle-outline" size={20} color={C.textLight} />
               <Text style={styles.authHintText}>Войдите в аккаунт, чтобы оставить отзыв</Text>
             </View>
           ) : myReview && !editing ? (
-            /* Карточка существующего отзыва пользователя */
             <View style={styles.myReviewCard}>
               <View style={styles.myReviewTop}>
                 <Text style={styles.myReviewLabel}>Ваш отзыв</Text>
                 <View style={styles.myReviewActions}>
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={() => { setEditing(true); }}
-                    hitSlop={8}
-                  >
+                  <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)} hitSlop={8}>
                     <Ionicons name="pencil-outline" size={15} color={C.primary} />
                     <Text style={[styles.editBtnText, { color: C.primary }]}>Изменить</Text>
                   </TouchableOpacity>
@@ -319,67 +410,46 @@ export default function RoomScreen() {
                 </View>
               </View>
               <StarRating value={myReview.rating} size={20} />
-              {myReview.comment ? (
-                <Text style={styles.myReviewComment}>{myReview.comment}</Text>
-              ) : null}
+              {myReview.comment ? <Text style={styles.myReviewComment}>{myReview.comment}</Text> : null}
               <Text style={styles.reviewDate}>
                 {new Date(myReview.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
               </Text>
             </View>
           ) : (
-            /* Форма отзыва */
             <View style={styles.formCard}>
-              <Text style={styles.formTitle}>
-                {myReview ? 'Редактировать отзыв' : 'Оставить отзыв'}
-              </Text>
-
+              <Text style={styles.formTitle}>{myReview ? 'Редактировать отзыв' : 'Оставить отзыв'}</Text>
               <View style={styles.ratingRow}>
                 <Text style={styles.ratingLabel}>Ваша оценка</Text>
                 <StarRating value={rating} size={32} onSelect={setRating} />
               </View>
-              {rating > 0 && (
-                <Text style={styles.ratingCaption}>{RATING_CAPTIONS[rating]}</Text>
-              )}
-
+              {rating > 0 && <Text style={styles.ratingCaption}>{RATING_CAPTIONS[rating]}</Text>}
               <TextInput
                 style={styles.commentInput}
                 placeholder="Комментарий (необязательно)"
                 placeholderTextColor={C.textLight}
                 value={comment}
                 onChangeText={setComment}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                maxLength={500}
+                multiline numberOfLines={3}
+                textAlignVertical="top" maxLength={500}
               />
-
               <View style={styles.formActions}>
                 {editing && (
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => { setEditing(false); setRating(myReview!.rating); setComment(myReview!.comment ?? ''); }}
-                  >
+                  <TouchableOpacity style={styles.cancelBtn}
+                    onPress={() => { setEditing(false); setRating(myReview!.rating); setComment(myReview!.comment ?? ''); }}>
                     <Text style={[styles.cancelBtnText, { color: C.textLight }]}>Отмена</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={[styles.submitBtn, { backgroundColor: rating === 0 ? C.border : C.primary }, submitting && { opacity: 0.6 }]}
-                  onPress={submitReview}
-                  disabled={submitting || rating === 0}
-                  activeOpacity={0.85}
-                >
+                  onPress={submitReview} disabled={submitting || rating === 0} activeOpacity={0.85}>
                   {submitting
                     ? <ActivityIndicator color="#fff" size="small" />
-                    : <Text style={styles.submitBtnText}>
-                        {myReview ? 'Сохранить' : 'Отправить отзыв'}
-                      </Text>
-                  }
+                    : <Text style={styles.submitBtnText}>{myReview ? 'Сохранить' : 'Отправить отзыв'}</Text>}
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {/* Остальные отзывы */}
           {otherReviews.length === 0 && !myReview && (
             <View style={styles.noReviewsBox}>
               <Text style={styles.noReviews}>Пока нет отзывов. Будьте первым!</Text>
@@ -391,9 +461,7 @@ export default function RoomScreen() {
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewAuthorRow}>
                   <View style={styles.reviewAvatar}>
-                    <Text style={styles.reviewAvatarText}>
-                      {(r.users?.name || 'Г')[0].toUpperCase()}
-                    </Text>
+                    <Text style={styles.reviewAvatarText}>{(r.users?.name || 'Г')[0].toUpperCase()}</Text>
                   </View>
                   <Text style={styles.reviewAuthor}>{r.users?.name || 'Гость'}</Text>
                 </View>
@@ -405,23 +473,13 @@ export default function RoomScreen() {
               </Text>
             </View>
           ))}
-        </View>
 
-        {/* Кнопка бронирования */}
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-          <TouchableOpacity
-            style={styles.bookBtn}
-            onPress={() => router.push({ pathname: '/booking/[roomId]', params: { roomId: room.id, roomName: room.name } })}
-          >
-            <Text style={styles.bookBtnText}>
-              Забронировать — {(room.price_per_team ?? room.price_per_hour).toLocaleString('ru-RU')} ₽
-            </Text>
-          </TouchableOpacity>
+          <View style={{ height: insets.bottom + 20 }} />
         </View>
 
       </ScrollView>
 
-      {/* Выбор навигатора */}
+      {/* Диалог выбора навигатора */}
       <Modal transparent visible={mapPickerVisible} animationType="fade" onRequestClose={() => setMapPickerVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setMapPickerVisible(false)}>
           <View style={styles.pickerBackdrop} />
@@ -449,14 +507,6 @@ export default function RoomScreen() {
   );
 }
 
-const RATING_CAPTIONS: Record<number, string> = {
-  1: 'Ужасно 😞',
-  2: 'Плохо 😕',
-  3: 'Нормально 😐',
-  4: 'Хорошо 😊',
-  5: 'Отлично! 🎉',
-};
-
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: C.background },
@@ -465,7 +515,7 @@ function makeStyles(C: ThemeColors) {
     photo: { height: 270 },
     dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-    dotActive: { backgroundColor: '#FFFFFF', width: 22 },
+    dotActive: { backgroundColor: '#fff', width: 22 },
 
     content: { padding: 20, gap: 14 },
 
@@ -479,34 +529,24 @@ function makeStyles(C: ThemeColors) {
     infoText: { fontSize: 14, color: C.textLight, flex: 1 },
     infoTextLink: { color: C.primary, textDecorationLine: 'underline' },
 
-    priceBox: { backgroundColor: C.primaryLight, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    priceLabel: { fontSize: 14, color: C.primary, fontWeight: '600' },
-    price: { fontSize: 24, fontWeight: '800', color: C.primary },
-
     description: { fontSize: 15, color: C.text, lineHeight: 23 },
 
-    questGrid: {
-      flexDirection: 'row', flexWrap: 'wrap', gap: 10,
-    },
-    questItem: {
-      backgroundColor: C.white, borderRadius: 12, padding: 12,
-      borderWidth: 1, borderColor: C.border,
-      minWidth: '46%', flex: 1,
-    },
-    questItemLabel: { fontSize: 11, color: C.textLight, fontWeight: '600', marginBottom: 3, textTransform: 'uppercase' },
-    questItemValue: { fontSize: 15, color: C.text, fontWeight: '700' },
-
-    // Раздел отзывов
-    reviewsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    questsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
     sectionTitle: { fontSize: 18, fontWeight: '700', color: C.text },
+    questCountBadge: { backgroundColor: C.primaryLight, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
+    questCountText: { fontSize: 13, fontWeight: '700', color: C.primary },
+
+    questsList: { gap: 14 },
+    emptyQuests: { backgroundColor: C.white, borderRadius: 12, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    emptyQuestsText: { color: C.textLight, fontSize: 14 },
+
+    reviewsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
     avgBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9E6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
     avgText: { fontSize: 13, fontWeight: '700', color: '#9A7000' },
 
-    // Подсказка для гостей
     authHint: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.border },
     authHintText: { fontSize: 14, color: C.textLight },
 
-    // Карточка своего отзыва
     myReviewCard: { backgroundColor: C.primaryLight, borderRadius: 14, padding: 16, gap: 8, borderWidth: 1.5, borderColor: C.primary },
     myReviewTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     myReviewLabel: { fontSize: 13, fontWeight: '700', color: C.primary },
@@ -515,29 +555,18 @@ function makeStyles(C: ThemeColors) {
     editBtnText: { fontSize: 13, fontWeight: '600' },
     myReviewComment: { fontSize: 14, color: C.text, lineHeight: 20 },
 
-    // Форма отзыва
     formCard: { backgroundColor: C.white, borderRadius: 14, padding: 16, gap: 14, borderWidth: 1.5, borderColor: C.border },
     formTitle: { fontSize: 16, fontWeight: '700', color: C.text },
     ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     ratingLabel: { fontSize: 14, color: C.text, fontWeight: '500' },
     ratingCaption: { fontSize: 13, color: C.textLight, marginTop: -6 },
-    commentInput: {
-      backgroundColor: C.background,
-      borderRadius: 10,
-      borderWidth: 1.5,
-      borderColor: C.border,
-      padding: 12,
-      fontSize: 14,
-      color: C.text,
-      minHeight: 80,
-    },
+    commentInput: { backgroundColor: C.background, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, padding: 12, fontSize: 14, color: C.text, minHeight: 80 },
     formActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
     cancelBtn: { paddingVertical: 12, paddingHorizontal: 4 },
     cancelBtnText: { fontSize: 14, fontWeight: '600' },
     submitBtn: { flex: 1, borderRadius: 12, padding: 14, alignItems: 'center' },
     submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-    // Список отзывов
     noReviewsBox: { backgroundColor: C.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border },
     noReviews: { color: C.textLight, fontSize: 14, fontStyle: 'italic' },
     reviewCard: { backgroundColor: C.white, borderRadius: 12, padding: 14, gap: 8, borderWidth: 1, borderColor: C.border },
@@ -549,17 +578,8 @@ function makeStyles(C: ThemeColors) {
     reviewComment: { fontSize: 14, color: C.text, lineHeight: 20 },
     reviewDate: { fontSize: 12, color: C.textLight },
 
-    footer: { padding: 20, paddingTop: 0 },
-    bookBtn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center' },
-    bookBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-
-    // Диалог выбора навигатора
     pickerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-    pickerDialog: {
-      position: 'absolute', bottom: 32, left: 20, right: 20,
-      backgroundColor: C.white, borderRadius: 18, overflow: 'hidden',
-      shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 8,
-    },
+    pickerDialog: { position: 'absolute', bottom: 32, left: 20, right: 20, backgroundColor: C.white, borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 8 },
     pickerTitle: { fontSize: 13, fontWeight: '600', color: C.textLight, textAlign: 'center', paddingTop: 16, paddingBottom: 8 },
     pickerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 14 },
     pickerIcon: { width: 24, height: 24, borderRadius: 6 },
