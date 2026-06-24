@@ -2,11 +2,9 @@ import { useMemo } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Room, Genre, Difficulty } from '@/types';
+import { Room, Genre } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { useFavorites } from '@/context/FavoritesContext';
-
-// ── визуальные словари ────────────────────────────────────────────────────────
 
 const GENRE_META: Record<Genre, { emoji: string; bg: string }> = {
   'хоррор':     { emoji: '👻', bg: '#7B1010' },
@@ -17,18 +15,11 @@ const GENRE_META: Record<Genre, { emoji: string; bg: string }> = {
   'перформанс': { emoji: '🎭', bg: '#8F0E6A' },
 };
 
-const DIFF_COLOR: Record<string, string> = {
-  'новичок': '#1A8A3A',
-  'средний': '#B06000',
-  'опытный': '#B01010',
-};
-
-const SCARY_LABEL: Record<string, string> = {
-  'немного': '😨 Немного страшно',
-  'хоррор':  '💀 Хоррор',
-};
-
-// ── компонент ─────────────────────────────────────────────────────────────────
+function questWord(n: number) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'квест';
+  if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'квеста';
+  return 'квестов';
+}
 
 export function RoomCard({ room }: { room: Room }) {
   const router = useRouter();
@@ -37,9 +28,15 @@ export function RoomCard({ room }: { room: Room }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const fav = isFavorite(room.id);
 
-  const price  = room.price_per_team ?? room.price_per_hour;
-  const genre  = room.genre ? GENRE_META[room.genre] : null;
-  const scary  = room.is_scary && room.is_scary !== 'нет' ? SCARY_LABEL[room.is_scary] : null;
+  const quests = room.quests ?? [];
+  const genres = [...new Set(quests.map(q => q.genre).filter(Boolean))] as Genre[];
+  const questCount = quests.length;
+  const minPrice = questCount > 0
+    ? Math.min(...quests.map(q => q.price_per_team))
+    : (room.price_per_team ?? room.price_per_hour ?? 0);
+
+  const photoUri = room.photos?.[0]
+    ?? 'https://placehold.co/400x200/1A3A5C/FFFFFF?text=КвестРум';
 
   return (
     <TouchableOpacity
@@ -47,18 +44,30 @@ export function RoomCard({ room }: { room: Room }) {
       onPress={() => router.push({ pathname: '/room/[id]', params: { id: room.id } })}
       activeOpacity={0.92}
     >
-      {/* Фото с жанр-бейджем */}
+      {/* Фото */}
       <View>
-        <Image
-          source={{ uri: room.photos[0] ?? 'https://placehold.co/400x200/1A3A5C/FFFFFF?text=КвестРум' }}
-          style={styles.photo}
-          resizeMode="cover"
-        />
-        {genre && (
-          <View style={[styles.genreBadge, { backgroundColor: genre.bg }]}>
-            <Text style={styles.genreText}>{genre.emoji} {room.genre}</Text>
+        <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
+
+        {/* Жанровые бейджи поверх фото */}
+        {genres.length > 0 && (
+          <View style={styles.genreRow}>
+            {genres.slice(0, 3).map(g => {
+              const m = GENRE_META[g];
+              return (
+                <View key={g} style={[styles.genreBadge, { backgroundColor: m.bg }]}>
+                  <Text style={styles.genreText}>{m.emoji} {g}</Text>
+                </View>
+              );
+            })}
+            {genres.length > 3 && (
+              <View style={[styles.genreBadge, { backgroundColor: 'rgba(0,0,0,0.55)' }]}>
+                <Text style={styles.genreText}>+{genres.length - 3}</Text>
+              </View>
+            )}
           </View>
         )}
+
+        {/* Избранное */}
         <TouchableOpacity
           style={styles.favBtn}
           onPress={() => toggleFavorite(room.id)}
@@ -85,55 +94,21 @@ export function RoomCard({ room }: { room: Room }) {
           <Text style={styles.address} numberOfLines={1}>{room.address}</Text>
         </View>
 
-        {/* Характеристики: длительность · игроки · сложность */}
-        <View style={styles.specsRow}>
-          {room.duration_minutes != null && (
-            <View style={styles.spec}>
-              <Ionicons name="time-outline" size={13} color={C.textLight} />
-              <Text style={styles.specText}>{room.duration_minutes} мин</Text>
-            </View>
-          )}
-          {room.min_players != null && room.max_players != null && (
-            <View style={styles.spec}>
-              <Ionicons name="people-outline" size={13} color={C.textLight} />
-              <Text style={styles.specText}>{room.min_players}–{room.max_players} чел</Text>
-            </View>
-          )}
-          {room.difficulty && (
-            <View style={[styles.diffBadge, { backgroundColor: DIFF_COLOR[room.difficulty] + '18' }]}>
-              <Text style={[styles.diffText, { color: DIFF_COLOR[room.difficulty] }]}>
-                {room.difficulty}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Теги: возраст · актёр · страшность */}
-        {(room.age_limit || room.has_actor || scary) ? (
-          <View style={styles.tagsRow}>
-            {room.age_limit && (
-              <View style={styles.tag}><Text style={styles.tagText}>{room.age_limit}</Text></View>
-            )}
-            {room.has_actor && (
-              <View style={[styles.tag, { backgroundColor: C.primaryLight, borderColor: C.primary }]}>
-                <Text style={[styles.tagText, { color: C.primary }]}>🎭 Актёр</Text>
-              </View>
-            )}
-            {scary && (
-              <View style={[styles.tag, { backgroundColor: '#FFE4E4', borderColor: '#FF6666' }]}>
-                <Text style={[styles.tagText, { color: '#B01010' }]}>{scary}</Text>
-              </View>
-            )}
-          </View>
-        ) : null}
-
-        {/* Цена + кнопка */}
+        {/* Нижняя строка: кол-во квестов + цена слева, кнопка справа */}
         <View style={styles.footer}>
           <View>
-            <Text style={styles.price}>{price.toLocaleString('ru-RU')} ₽</Text>
-            <Text style={styles.perLabel}>за команду</Text>
+            {questCount > 0 && (
+              <Text style={styles.questCount}>{questCount} {questWord(questCount)}</Text>
+            )}
+            <Text style={styles.price}>
+              {questCount > 0 ? 'от ' : ''}{minPrice.toLocaleString('ru-RU')} ₽
+            </Text>
           </View>
-          <View style={styles.pill}><Text style={styles.pillText}>Забронировать</Text></View>
+
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>Смотреть квесты</Text>
+            <Ionicons name="arrow-forward" size={14} color={C.primary} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -143,46 +118,82 @@ export function RoomCard({ room }: { room: Room }) {
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
     card: {
-      backgroundColor: C.white, borderRadius: 16, marginBottom: 16,
-      overflow: 'hidden', elevation: 3,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10,
+      backgroundColor: C.white,
+      borderRadius: 16,
+      marginBottom: 16,
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
     },
     photo: { width: '100%', height: 185 },
+
+    genreRow: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      flexDirection: 'row',
+      gap: 6,
+      flexWrap: 'wrap',
+      maxWidth: '75%',
+    },
     genreBadge: {
-      position: 'absolute', top: 10, left: 10,
-      paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+      borderRadius: 20,
     },
     genreText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
     favBtn: {
-      position: 'absolute', top: 10, right: 10,
-      width: 34, height: 34, borderRadius: 17,
-      backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'center', alignItems: 'center',
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(0,0,0,0.32)',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
+
     info: { padding: 14, gap: 8 },
+
     titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     name: { fontSize: 17, fontWeight: '700', color: C.text, flex: 1, marginRight: 8 },
     ratingBadge: {
-      flexDirection: 'row', alignItems: 'center', gap: 3,
-      backgroundColor: '#FFF9E6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: '#FFF9E6',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 20,
     },
     ratingText: { fontSize: 12, fontWeight: '700', color: '#9A7000' },
+
     addrRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     address: { fontSize: 13, color: C.textLight, flex: 1 },
-    specsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-    spec: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    specText: { fontSize: 13, color: C.textLight },
-    diffBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-    diffText: { fontSize: 12, fontWeight: '600' },
-    tagsRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-    tag: {
-      paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20,
-      borderWidth: 1, borderColor: C.border, backgroundColor: C.background,
+
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 2,
     },
-    tagText: { fontSize: 12, fontWeight: '600', color: C.text },
-    footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
+    questCount: { fontSize: 12, color: C.textLight, marginBottom: 1 },
     price: { fontSize: 20, fontWeight: '800', color: C.primary },
-    perLabel: { fontSize: 12, color: C.textLight, marginTop: 1 },
-    pill: { backgroundColor: C.primaryLight, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: C.primaryLight,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+    },
     pillText: { fontSize: 13, fontWeight: '600', color: C.primary },
   });
 }

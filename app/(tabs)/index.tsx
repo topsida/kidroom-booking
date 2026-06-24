@@ -9,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Room, RoomFilters } from '@/types';
+import { Room, Quest, RoomFilters } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { RoomsMap } from '@/components/RoomsMap';
@@ -109,25 +109,38 @@ export default function HomeScreen() {
       r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q)
     );
 
-    if (filters.genre)      result = result.filter(r => r.genre === filters.genre);
-    if (filters.difficulty) result = result.filter(r => r.difficulty === filters.difficulty);
-    if (filters.age_limit)  result = result.filter(r => r.age_limit === filters.age_limit);
-    if (filters.is_scary)   result = result.filter(r => r.is_scary === filters.is_scary);
-    if (filters.has_actor === 'да')  result = result.filter(r => r.has_actor === true);
-    if (filters.has_actor === 'нет') result = result.filter(r => r.has_actor === false);
+    // Фильтры применяются к квестам внутри организации
+    const hasQuest = (r: Room, check: (q: Quest) => boolean) =>
+      (r.quests ?? []).some(check);
+
+    if (filters.genre)
+      result = result.filter(r => hasQuest(r, q => q.genre === filters.genre));
+    if (filters.difficulty)
+      result = result.filter(r => hasQuest(r, q => q.difficulty === filters.difficulty));
+    if (filters.age_limit)
+      result = result.filter(r => hasQuest(r, q => q.age_limit === filters.age_limit));
+    if (filters.is_scary)
+      result = result.filter(r => hasQuest(r, q => q.is_scary === filters.is_scary));
+    if (filters.has_actor === 'да')
+      result = result.filter(r => hasQuest(r, q => q.has_actor === true));
+    if (filters.has_actor === 'нет')
+      result = result.filter(r => hasQuest(r, q => !q.has_actor));
 
     if (filters.players === '1-2')
-      result = result.filter(r => (r.min_players ?? 2) <= 2);
+      result = result.filter(r => hasQuest(r, q => (q.min_players ?? 2) <= 2));
     if (filters.players === '3-4')
-      result = result.filter(r => (r.max_players ?? 6) >= 3 && (r.min_players ?? 2) <= 4);
+      result = result.filter(r => hasQuest(r, q => (q.max_players ?? 6) >= 3 && (q.min_players ?? 2) <= 4));
     if (filters.players === '5+')
-      result = result.filter(r => (r.max_players ?? 6) >= 5);
+      result = result.filter(r => hasQuest(r, q => (q.max_players ?? 6) >= 5));
 
     setFiltered(result);
   }, [search, filters, rooms]);
 
   async function loadRooms() {
-    const { data } = await supabase.from('rooms').select('*').order('rating', { ascending: false });
+    const { data } = await supabase
+      .from('rooms')
+      .select('*, quests(id, genre, difficulty, age_limit, min_players, max_players, has_actor, is_scary, price_per_team)')
+      .order('rating', { ascending: false });
     setRooms(data ?? []);
     setLoading(false);
     setRefreshing(false);
@@ -289,7 +302,7 @@ export default function HomeScreen() {
               <Text style={styles.applyBtnText}>
                 {filtered.length === 0
                   ? 'Ничего не найдено'
-                  : `Показать ${filtered.length} ${rooms_word(filtered.length)}`}
+                  : `Показать ${filtered.length} ${org_word(filtered.length)}`}
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -300,10 +313,10 @@ export default function HomeScreen() {
   );
 }
 
-function rooms_word(n: number) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'комнату';
-  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'комнаты';
-  return 'комнат';
+function org_word(n: number) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'организацию';
+  if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'организации';
+  return 'организаций';
 }
 
 function makeStyles(C: ThemeColors) {
