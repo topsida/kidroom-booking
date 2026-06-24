@@ -152,7 +152,7 @@ export default function HomeScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>🎪 КидРум</Text>
+          <Text style={styles.title}>🎪 КвестРум</Text>
           <Text style={styles.subtitle}>Найди идеальную игровую комнату</Text>
         </View>
         <View style={styles.toggle}>
