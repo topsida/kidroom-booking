@@ -224,9 +224,59 @@ export default function RoomScreen() {
           </View>
 
           <View style={styles.priceBox}>
-            <Text style={styles.priceLabel}>Стоимость за час</Text>
-            <Text style={styles.price}>{room.price_per_hour} ₽</Text>
+            <Text style={styles.priceLabel}>Цена за команду</Text>
+            <Text style={styles.price}>{(room.price_per_team ?? room.price_per_hour).toLocaleString('ru-RU')} ₽</Text>
           </View>
+
+          {/* Характеристики квеста */}
+          {(room.genre || room.difficulty || room.age_limit || room.duration_minutes) && (
+            <View style={styles.questGrid}>
+              {room.genre && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Жанр</Text>
+                  <Text style={styles.questItemValue}>{room.genre}</Text>
+                </View>
+              )}
+              {room.difficulty && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Сложность</Text>
+                  <Text style={styles.questItemValue}>{room.difficulty}</Text>
+                </View>
+              )}
+              {room.age_limit && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Возраст</Text>
+                  <Text style={styles.questItemValue}>{room.age_limit}</Text>
+                </View>
+              )}
+              {room.duration_minutes && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Длительность</Text>
+                  <Text style={styles.questItemValue}>{room.duration_minutes} мин</Text>
+                </View>
+              )}
+              {room.min_players && room.max_players && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Игроки</Text>
+                  <Text style={styles.questItemValue}>{room.min_players}–{room.max_players} чел</Text>
+                </View>
+              )}
+              {room.has_actor != null && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Актёр</Text>
+                  <Text style={styles.questItemValue}>{room.has_actor ? '🎭 Да' : 'Нет'}</Text>
+                </View>
+              )}
+              {room.is_scary && (
+                <View style={styles.questItem}>
+                  <Text style={styles.questItemLabel}>Страшность</Text>
+                  <Text style={styles.questItemValue}>
+                    {room.is_scary === 'нет' ? '😊 Нет' : room.is_scary === 'немного' ? '😨 Немного' : '💀 Хоррор'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           <Text style={styles.description}>{room.description}</Text>
 
@@ -363,7 +413,9 @@ export default function RoomScreen() {
             style={styles.bookBtn}
             onPress={() => router.push({ pathname: '/booking/[roomId]', params: { roomId: room.id, roomName: room.name } })}
           >
-            <Text style={styles.bookBtnText}>Забронировать — {room.price_per_hour} ₽/час</Text>
+            <Text style={styles.bookBtnText}>
+              Забронировать — {(room.price_per_team ?? room.price_per_hour).toLocaleString('ru-RU')} ₽
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -432,6 +484,17 @@ function makeStyles(C: ThemeColors) {
     price: { fontSize: 24, fontWeight: '800', color: C.primary },
 
     description: { fontSize: 15, color: C.text, lineHeight: 23 },
+
+    questGrid: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: 10,
+    },
+    questItem: {
+      backgroundColor: C.white, borderRadius: 12, padding: 12,
+      borderWidth: 1, borderColor: C.border,
+      minWidth: '46%', flex: 1,
+    },
+    questItemLabel: { fontSize: 11, color: C.textLight, fontWeight: '600', marginBottom: 3, textTransform: 'uppercase' },
+    questItemValue: { fontSize: 15, color: C.text, fontWeight: '700' },
 
     // Раздел отзывов
     reviewsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },

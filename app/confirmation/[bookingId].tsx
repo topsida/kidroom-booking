@@ -25,60 +25,40 @@ export default function ConfirmationScreen() {
   async function load() {
     console.log('[Confirmation] load() started, bookingId:', bookingId);
 
-    const { data, error: bookingError } = await supabase
+    const { data } = await supabase
       .from('bookings').select('*, rooms(*)').eq('id', bookingId).single();
-    console.log('[Confirmation] booking fetch error:', bookingError?.message ?? 'none');
-    console.log('[Confirmation] booking data:', data ? `id=${data.id}, room=${data.rooms?.name}` : 'null');
-    console.log('[Confirmation] rooms.owner_telegram_chat_id:', data?.rooms?.owner_telegram_chat_id ?? '(not set)');
 
     setBooking(data);
     setLoading(false);
 
-    if (!data?.rooms) {
-      console.warn('[Confirmation] ABORT: no rooms data in booking');
-      return;
-    }
+    if (!data?.rooms) return;
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log('[Confirmation] auth.getUser error:', userError?.message ?? 'none');
-    console.log('[Confirmation] user:', user ? `id=${user.id}` : 'null');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-    if (!user) {
-      console.warn('[Confirmation] ABORT: no authenticated user');
-      return;
-    }
-
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('users').select('telegram_chat_id, name, phone').eq('id', user.id).single();
-    console.log('[Confirmation] profile fetch error:', profileError?.message ?? 'none');
-    console.log('[Confirmation] profile:', profile
-      ? `name="${profile.name}", phone="${profile.phone}", telegram_chat_id="${profile.telegram_chat_id ?? '(not set)'}"`
-      : 'null');
 
     const dateFormatted = new Date(data.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
     // Уведомление пользователю
+    const teamPrice = data.rooms.price_per_team ?? data.rooms.price_per_hour;
+
     if (profile?.telegram_chat_id) {
-      console.log('[Confirmation] sending USER notification to:', profile.telegram_chat_id);
       await sendTelegramMessage(
         profile.telegram_chat_id,
         bookingConfirmationText({
           roomName: data.rooms.name,
           date: dateFormatted,
           time: data.time_slot.slice(0, 5),
-          childName: data.child_name,
-          childAge: data.child_age,
-          price: data.rooms.price_per_hour,
+          playersCount: data.players_count,
+          price: teamPrice,
         })
       );
       setTelegramSent(true);
-    } else {
-      console.log('[Confirmation] SKIP user notification: no telegram_chat_id in profile');
     }
 
-    // Уведомление владельцу комнаты
     if (data.rooms.owner_telegram_chat_id) {
-      console.log('[Confirmation] sending OWNER notification to:', data.rooms.owner_telegram_chat_id);
       await sendTelegramMessage(
         data.rooms.owner_telegram_chat_id,
         ownerBookingNotificationText({
@@ -87,12 +67,10 @@ export default function ConfirmationScreen() {
           phone: profile?.phone ?? '',
           date: dateFormatted,
           time: data.time_slot.slice(0, 5),
-          childName: data.child_name,
-          childAge: data.child_age,
+          playersCount: data.players_count,
+          price: teamPrice,
         })
       );
-    } else {
-      console.log('[Confirmation] SKIP owner notification: owner_telegram_chat_id not set for this room');
     }
   }
 
@@ -112,12 +90,14 @@ export default function ConfirmationScreen() {
           <Text style={styles.subtitle}>Ждём вас! 🌟</Text>
 
           <View style={styles.card}>
-            <Row icon="home-outline" label="Комната" value={booking.rooms?.name ?? ''} rowStyles={rowStyles} />
+            <Row icon="home-outline" label="Квест" value={booking.rooms?.name ?? ''} rowStyles={rowStyles} />
             <Row icon="location-outline" label="Адрес" value={booking.rooms?.address ?? ''} rowStyles={rowStyles} />
             <Row icon="calendar-outline" label="Дата" value={dateFormatted} rowStyles={rowStyles} />
             <Row icon="time-outline" label="Время" value={booking.time_slot.slice(0, 5)} rowStyles={rowStyles} />
-            <Row icon="happy-outline" label="Ребёнок" value={`${booking.child_name}, ${booking.child_age} лет`} rowStyles={rowStyles} />
-            <Row icon="cash-outline" label="Стоимость" value={`${booking.rooms?.price_per_hour} ₽`} last rowStyles={rowStyles} />
+            <Row icon="people-outline" label="Игроки" value={`${booking.players_count} чел`} rowStyles={rowStyles} />
+            <Row icon="cash-outline" label="Стоимость"
+              value={`${(booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽`}
+              last rowStyles={rowStyles} />
           </View>
 
           {telegramSent && (

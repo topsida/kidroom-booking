@@ -1,6 +1,7 @@
 -- ============================================================
 -- СХЕМА БАЗЫ ДАННЫХ — КвестРум
--- SQL Editor → New query → вставьте всё → Run
+-- ДЛЯ НОВОЙ БД: выполните весь файл
+-- ДЛЯ СУЩЕСТВУЮЩЕЙ БД: выполните только секцию "МИГРАЦИЯ" внизу
 -- ============================================================
 
 create table public.users (
@@ -20,16 +21,24 @@ create table public.rooms (
   name text not null,
   description text not null default '',
   address text not null,
-  price_per_hour numeric(10,2) not null,
+  price_per_hour numeric(10,2) not null default 0,
+  price_per_team numeric(10,2),                  -- основная цена (за команду)
   rating numeric(3,2) default 0,
   photos text[] default '{}',
-  working_hours_start time default '09:00',
-  working_hours_end time default '21:00',
+  working_hours_start time default '10:00',
+  working_hours_end time default '22:00',
   owner_telegram_chat_id text,
   latitude double precision,
   longitude double precision,
-  min_age int default 1,
-  max_age int default 18,
+  -- Поля квест-рума
+  genre text check (genre in ('хоррор','детектив','приключение','детский','VR','перформанс')),
+  difficulty text check (difficulty in ('новичок','средний','опытный')),
+  age_limit text check (age_limit in ('6+','12+','16+','18+')),
+  min_players int default 2,
+  max_players int default 6,
+  duration_minutes int default 60,
+  has_actor boolean default false,
+  is_scary text check (is_scary in ('нет','немного','хоррор')) default 'нет',
   created_at timestamptz default now() not null
 );
 alter table public.rooms enable row level security;
@@ -55,8 +64,7 @@ create table public.bookings (
   room_id uuid references public.rooms(id) on delete cascade not null,
   date date not null,
   time_slot time not null,
-  child_name text not null,
-  child_age int check (child_age between 1 and 18) not null,
+  players_count int check (players_count between 1 and 20) default 2 not null,
   status text check (status in ('pending','confirmed','cancelled','completed')) default 'confirmed' not null,
   created_at timestamptz default now() not null,
   unique (room_id, date, time_slot)
@@ -98,9 +106,31 @@ create trigger rating_trigger
   after insert or update or delete on public.reviews
   for each row execute function public.update_room_rating();
 
--- Тестовые данные
-insert into public.rooms (name, description, address, price_per_hour, rating, photos, working_hours_start, working_hours_end) values
-('Радуга', 'Просторная комната с батутами, горками и мягкими модулями. Для детей от 1 до 7 лет.', 'г. Ростов-на-Дону, ул. Пушкинская, 30', 800, 4.8, ARRAY['https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=800','https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800'], '09:00', '21:00'),
-('Звёздочка', 'Тематические зоны: космос, лес, пиратский корабль. Для детей от 2 до 10 лет.', 'г. Ростов-на-Дону, пр. Ворошиловский, 55', 1000, 4.9, ARRAY['https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=800'], '10:00', '22:00'),
-('Весёлый мир', 'Творческие мастер-классы, LEGO и настольные игры. Для детей от 3 до 12 лет.', 'г. Ростов-на-Дону, ул. Сокольническая, 22', 700, 4.6, ARRAY['https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800'], '09:00', '20:00'),
-('Кидландия', 'Бассейн с шариками, детский скалодром и кафе для родителей.', 'г. Ростов-на-Дону, пл. Карла Маркса, 8, ТЦ «Западный»', 1200, 4.7, ARRAY['https://images.unsplash.com/photo-1526634332515-d56c5fd16991?w=800'], '10:00', '22:00');
+
+-- ============================================================
+-- МИГРАЦИЯ (только если таблицы уже существуют)
+-- Выполните эти команды в Supabase → SQL Editor
+-- ============================================================
+
+-- Новые поля в таблице rooms
+alter table public.rooms
+  add column if not exists price_per_team numeric(10,2),
+  add column if not exists genre text,
+  add column if not exists difficulty text,
+  add column if not exists age_limit text,
+  add column if not exists min_players int default 2,
+  add column if not exists max_players int default 6,
+  add column if not exists duration_minutes int default 60,
+  add column if not exists has_actor boolean default false,
+  add column if not exists is_scary text default 'нет';
+
+-- Обновление таблицы bookings: убираем обязательность child_name/child_age,
+-- добавляем players_count
+alter table public.bookings
+  add column if not exists players_count int default 2;
+
+alter table public.bookings
+  alter column child_name drop not null;
+
+alter table public.bookings
+  alter column child_age drop not null;

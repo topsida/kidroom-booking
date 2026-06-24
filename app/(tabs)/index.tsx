@@ -9,8 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Room, RoomFilters, PricingRule } from '@/types';
-import { getMinPrice } from '@/lib/pricing';
+import { Room, RoomFilters } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { RoomsMap } from '@/components/RoomsMap';
@@ -19,11 +18,14 @@ import { useAuth } from '@/hooks/useAuth';
 
 type ViewMode = 'list' | 'map';
 
-const DEFAULT_FILTERS: RoomFilters = { price: null, age: null, rating: null };
-const PANEL_HEIGHT = 600;
+const DEFAULT_FILTERS: RoomFilters = {
+  genre: null, difficulty: null, age_limit: null,
+  players: null, has_actor: null, is_scary: null,
+};
+const PANEL_HEIGHT = 700;
 
 function activeCount(f: RoomFilters) {
-  return [f.price, f.age, f.rating].filter(Boolean).length;
+  return [f.genre, f.difficulty, f.age_limit, f.players, f.has_actor, f.is_scary].filter(Boolean).length;
 }
 
 export default function HomeScreen() {
@@ -36,7 +38,6 @@ export default function HomeScreen() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filtered, setFiltered] = useState<Room[]>([]);
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<RoomFilters>(DEFAULT_FILTERS);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -108,30 +109,26 @@ export default function HomeScreen() {
       r.name.toLowerCase().includes(q) || r.address.toLowerCase().includes(q)
     );
 
-    if (filters.price === 'lt500')     result = result.filter(r => r.price_per_hour < 500);
-    if (filters.price === '500to1000') result = result.filter(r => r.price_per_hour >= 500 && r.price_per_hour <= 1000);
-    if (filters.price === 'gt1000')    result = result.filter(r => r.price_per_hour > 1000);
+    if (filters.genre)      result = result.filter(r => r.genre === filters.genre);
+    if (filters.difficulty) result = result.filter(r => r.difficulty === filters.difficulty);
+    if (filters.age_limit)  result = result.filter(r => r.age_limit === filters.age_limit);
+    if (filters.is_scary)   result = result.filter(r => r.is_scary === filters.is_scary);
+    if (filters.has_actor === 'да')  result = result.filter(r => r.has_actor === true);
+    if (filters.has_actor === 'нет') result = result.filter(r => r.has_actor === false);
 
-    if (filters.age === 'lt3')
-      result = result.filter(r => r.min_age == null || r.min_age <= 3);
-    if (filters.age === '3to7')
-      result = result.filter(r => (r.min_age == null || r.min_age <= 7) && (r.max_age == null || r.max_age >= 3));
-    if (filters.age === 'gt7')
-      result = result.filter(r => r.max_age == null || r.max_age >= 7);
-
-    if (filters.rating === '4.5') result = result.filter(r => r.rating >= 4.5);
-    if (filters.rating === '4.0') result = result.filter(r => r.rating >= 4.0);
+    if (filters.players === '1-2')
+      result = result.filter(r => (r.min_players ?? 2) <= 2);
+    if (filters.players === '3-4')
+      result = result.filter(r => (r.max_players ?? 6) >= 3 && (r.min_players ?? 2) <= 4);
+    if (filters.players === '5+')
+      result = result.filter(r => (r.max_players ?? 6) >= 5);
 
     setFiltered(result);
   }, [search, filters, rooms]);
 
   async function loadRooms() {
-    const [roomsRes, rulesRes] = await Promise.all([
-      supabase.from('rooms').select('*').order('rating', { ascending: false }),
-      supabase.from('pricing_rules').select('*').eq('is_active', true),
-    ]);
-    setRooms(roomsRes.data ?? []);
-    setPricingRules(rulesRes.data ?? []);
+    const { data } = await supabase.from('rooms').select('*').order('rating', { ascending: false });
+    setRooms(data ?? []);
     setLoading(false);
     setRefreshing(false);
   }
@@ -152,8 +149,8 @@ export default function HomeScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>🎪 КвестРум</Text>
-          <Text style={styles.subtitle}>Найди идеальную игровую комнату</Text>
+          <Text style={styles.title}>🎭 КвестРум</Text>
+          <Text style={styles.subtitle}>Найди идеальный квест-рум в Ростове</Text>
         </View>
         <View style={styles.toggle}>
           <TouchableOpacity
@@ -219,13 +216,7 @@ export default function HomeScreen() {
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-              <RoomCard
-                room={item}
-                minPrice={getMinPrice(
-                  item.price_per_hour,
-                  pricingRules.filter(r => r.room_id === item.id),
-                )}
-              />
+              <RoomCard room={item} />
             )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}

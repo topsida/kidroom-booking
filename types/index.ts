@@ -1,9 +1,19 @@
+// ─── Справочные типы для квест-румов ─────────────────────────────────────────
+
+export type Genre     = 'хоррор' | 'детектив' | 'приключение' | 'детский' | 'VR' | 'перформанс';
+export type Difficulty = 'новичок' | 'средний' | 'опытный';
+export type AgeLimit  = '6+' | '12+' | '16+' | '18+';
+export type IsScary   = 'нет' | 'немного' | 'хоррор';
+
+// ─── Интерфейсы ───────────────────────────────────────────────────────────────
+
 export interface Room {
   id: string;
   name: string;
   description: string;
   address: string;
-  price_per_hour: number;
+  price_per_hour: number;       // оставляем для совместимости
+  price_per_team?: number;      // основная цена квеста (за команду)
   rating: number;
   photos: string[];
   working_hours_start: string;
@@ -11,15 +21,25 @@ export interface Room {
   owner_telegram_chat_id?: string;
   latitude?: number;
   longitude?: number;
-  min_age?: number;
-  max_age?: number;
+  // Поля квест-рума
+  genre?: Genre;
+  difficulty?: Difficulty;
+  age_limit?: AgeLimit;
+  min_players?: number;
+  max_players?: number;
+  duration_minutes?: number;
+  has_actor?: boolean;
+  is_scary?: IsScary;
   created_at: string;
 }
 
 export interface RoomFilters {
-  price:  'lt500' | '500to1000' | 'gt1000' | null;
-  age:    'lt3'   | '3to7'      | 'gt7'    | null;
-  rating: '4.5'   | '4.0'       | null;
+  genre:      Genre | null;
+  difficulty: Difficulty | null;
+  age_limit:  AgeLimit | null;
+  players:    '1-2' | '3-4' | '5+' | null;
+  has_actor:  'да' | 'нет' | null;
+  is_scary:   IsScary | null;
 }
 
 export interface Review {
@@ -38,8 +58,7 @@ export interface Booking {
   room_id: string;
   date: string;
   time_slot: string;
-  child_name: string;
-  child_age: number;
+  players_count: number;        // было: child_name + child_age
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   created_at: string;
   rooms?: Room;
@@ -50,7 +69,7 @@ export interface PricingRule {
   room_id: string;
   name: string;
   day_type: 'weekday' | 'weekend' | 'all';
-  days_of_week: number[]; // 0=Вс 1=Пн 2=Вт 3=Ср 4=Чт 5=Пт 6=Сб
+  days_of_week: number[];
   time_from: string;
   time_to: string;
   price_modifier: number;

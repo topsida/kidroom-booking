@@ -40,11 +40,13 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
         <Text style={styles.detail}>{booking.time_slot.slice(0, 5)}</Text>
       </View>
       <View style={styles.row}>
-        <Ionicons name="happy-outline" size={14} color={C.textLight} />
-        <Text style={styles.detail}>{booking.child_name}, {booking.child_age} лет</Text>
+        <Ionicons name="people-outline" size={14} color={C.textLight} />
+        <Text style={styles.detail}>{booking.players_count} чел</Text>
       </View>
       <View style={styles.footer}>
-        <Text style={styles.price}>{booking.rooms?.price_per_hour} ₽</Text>
+        <Text style={styles.price}>
+          {(booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽
+        </Text>
         {onCancel && (
           <TouchableOpacity style={styles.cancelBtn} onPress={confirmCancel}>
             <Text style={styles.cancelText}>Отменить</Text>

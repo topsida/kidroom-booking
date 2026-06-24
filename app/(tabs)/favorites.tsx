@@ -3,8 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Room, PricingRule } from '@/types';
-import { getMinPrice } from '@/lib/pricing';
+import { Room } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -15,7 +14,6 @@ export default function FavoritesScreen() {
   const { favorites } = useFavorites();
 
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const firstLoad = useRef(true);
@@ -33,19 +31,14 @@ export default function FavoritesScreen() {
 
     if (ids.length === 0) {
       setRooms([]);
-      setPricingRules([]);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    const [roomsRes, rulesRes] = await Promise.all([
-      supabase.from('rooms').select('*').in('id', ids),
-      supabase.from('pricing_rules').select('*').eq('is_active', true).in('room_id', ids),
-    ]);
+    const { data } = await supabase.from('rooms').select('*').in('id', ids);
 
-    setRooms(roomsRes.data ?? []);
-    setPricingRules(rulesRes.data ?? []);
+    setRooms(data ?? []);
     setLoading(false);
     setRefreshing(false);
   }
@@ -71,13 +64,7 @@ export default function FavoritesScreen() {
         data={rooms}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <RoomCard
-            room={item}
-            minPrice={getMinPrice(
-              item.price_per_hour,
-              pricingRules.filter(r => r.room_id === item.id),
-            )}
-          />
+          <RoomCard room={item} />
         )}
         contentContainerStyle={[styles.list, rooms.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
