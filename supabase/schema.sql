@@ -21,6 +21,7 @@ create table public.rooms (
   name text not null,
   description text not null default '',
   address text not null,
+  phone text,
   price_per_hour numeric(10,2) not null default 0,
   price_per_team numeric(10,2),                  -- основная цена (за команду)
   rating numeric(3,2) default 0,
@@ -65,7 +66,7 @@ create table public.quests (
   description      text    not null default '',
   genre            text    check (genre in ('хоррор','детектив','приключение','детский','VR','перформанс')),
   difficulty       text    check (difficulty in ('новичок','средний','опытный')),
-  age_limit        text    check (age_limit in ('6+','12+','16+','18+')),
+  age_limit        text    check (age_limit in ('6+','8+','12+','16+','18+')),
   min_players      int     default 2,
   max_players      int     default 6,
   duration_minutes int     default 60,

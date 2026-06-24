@@ -37,6 +37,7 @@ const GROUPS: {
     key: 'age_limit', emoji: '🔞', title: 'Возраст',
     chips: [
       { id: '6+'  as AgeLimit, label: '6+'  },
+      { id: '8+'  as AgeLimit, label: '8+'  },
       { id: '12+' as AgeLimit, label: '12+' },
       { id: '16+' as AgeLimit, label: '16+' },
       { id: '18+' as AgeLimit, label: '18+' },
