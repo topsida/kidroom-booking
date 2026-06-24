@@ -58,16 +58,38 @@ create policy "public read" on public.reviews for select using (true);
 create policy "auth insert" on public.reviews for insert with check (auth.uid() = user_id);
 create policy "own update" on public.reviews for update using (auth.uid() = user_id);
 
+create table public.quests (
+  id               uuid    default gen_random_uuid() primary key,
+  room_id          uuid    references public.rooms(id) on delete cascade not null,
+  name             text    not null,
+  description      text    not null default '',
+  genre            text    check (genre in ('хоррор','детектив','приключение','детский','VR','перформанс')),
+  difficulty       text    check (difficulty in ('новичок','средний','опытный')),
+  age_limit        text    check (age_limit in ('6+','12+','16+','18+')),
+  min_players      int     default 2,
+  max_players      int     default 6,
+  duration_minutes int     default 60,
+  has_actor        boolean default false,
+  is_scary         text    check (is_scary in ('нет','немного','хоррор')) default 'нет',
+  price_per_team   numeric(10,2) not null default 0,
+  photos           text[]  default '{}',
+  is_active        boolean default true,
+  created_at       timestamptz default now() not null
+);
+alter table public.quests enable row level security;
+create policy "public read" on public.quests for select using (true);
+
 create table public.bookings (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.users(id) on delete cascade not null,
-  room_id uuid references public.rooms(id) on delete cascade not null,
+  room_id  uuid references public.rooms(id)  on delete cascade not null,
+  quest_id uuid references public.quests(id) on delete cascade,
   date date not null,
   time_slot time not null,
   players_count int check (players_count between 1 and 20) default 2 not null,
   status text check (status in ('pending','confirmed','cancelled','completed')) default 'confirmed' not null,
   created_at timestamptz default now() not null,
-  unique (room_id, date, time_slot)
+  unique (quest_id, date, time_slot)
 );
 alter table public.bookings enable row level security;
 create policy "own select" on public.bookings for select using (auth.uid() = user_id);
