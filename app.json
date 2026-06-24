@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#EF9F27"
+      "backgroundColor": "#E6F1FB"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -29,7 +29,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#EF9F27"
+        "backgroundColor": "#E6F1FB"
       },
       "package": "com.kidroom.booking",
       "permissions": [
