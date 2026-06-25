@@ -57,7 +57,7 @@ export default function LoginScreen() {
       >
       <View style={styles.content}>
         <Text style={styles.emoji}>🎪</Text>
-        <Text style={styles.title}>КвестРум</Text>
+        <Text style={styles.title}>QuestPoint</Text>
         <Text style={styles.subtitle}>Бронирование детских{'\n'}игровых комнат</Text>
 
         <View style={styles.form}>

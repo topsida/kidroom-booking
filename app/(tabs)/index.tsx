@@ -162,7 +162,7 @@ export default function HomeScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>🎭 КвестРум</Text>
+          <Text style={styles.title}>🎭 QuestPoint</Text>
           <Text style={styles.subtitle}>Найди идеальный квест-рум в Ростове</Text>
         </View>
         <View style={styles.toggle}>

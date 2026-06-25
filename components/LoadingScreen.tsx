@@ -107,7 +107,7 @@ export function LoadingScreen() {
           🎪
         </Animated.Text>
 
-        <Text style={styles.title}>КвестРум</Text>
+        <Text style={styles.title}>QuestPoint</Text>
 
         <Text style={styles.subtitle}>Ищем лучшие игровые комнаты…</Text>
 
