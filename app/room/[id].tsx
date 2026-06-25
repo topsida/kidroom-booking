@@ -190,6 +190,7 @@ export default function RoomScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [photoErrors, setPhotoErrors] = useState<Record<number, boolean>>({});
   const [mapPickerVisible, setMapPickerVisible] = useState(false);
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -294,30 +295,41 @@ export default function RoomScreen() {
   }
 
   const otherReviews = reviews.filter(r => r.user_id !== userId);
-  const orgPhotos = room.photos.length > 0
-    ? room.photos
-    : ['https://placehold.co/400x270/1A3A5C/FFFFFF?text=КвестРум'];
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* Фотогалерея организации */}
-        <View>
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / W))}>
-            {orgPhotos.map((uri, i) => (
-              <Image key={i} source={{ uri }} style={[styles.photo, { width: W }]} resizeMode="cover" />
-            ))}
-          </ScrollView>
-          {orgPhotos.length > 1 && (
-            <View style={styles.dots}>
-              {orgPhotos.map((_, i) => (
-                <View key={i} style={[styles.dot, i === photoIndex && styles.dotActive]} />
-              ))}
-            </View>
-          )}
-        </View>
+        {room.photos.length === 0 ? (
+          <View style={styles.photoPlaceholder}>
+            <Ionicons name="camera-outline" size={36} color="rgba(255,255,255,0.55)" />
+            <Text style={styles.photoPlaceholderText}>{room.name}</Text>
+          </View>
+        ) : (
+          <View>
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={e => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / W))}>
+              {room.photos.map((uri, i) =>
+                photoErrors[i] ? (
+                  <View key={i} style={[styles.photoPlaceholder, { width: W }]}>
+                    <Ionicons name="camera-outline" size={36} color="rgba(255,255,255,0.55)" />
+                  </View>
+                ) : (
+                  <Image key={i} source={{ uri }} style={[styles.photo, { width: W }]} resizeMode="cover"
+                    onError={() => setPhotoErrors(prev => ({ ...prev, [i]: true }))} />
+                )
+              )}
+            </ScrollView>
+            {room.photos.length > 1 && (
+              <View style={styles.dots}>
+                {room.photos.map((_, i) => (
+                  <View key={i} style={[styles.dot, i === photoIndex && styles.dotActive]} />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.content}>
 
@@ -513,6 +525,11 @@ function makeStyles(C: ThemeColors) {
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
 
     photo: { height: 270 },
+    photoPlaceholder: {
+      height: 160, width: W, backgroundColor: C.primary,
+      justifyContent: 'center', alignItems: 'center', gap: 10,
+    },
+    photoPlaceholderText: { color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: '700', textAlign: 'center', paddingHorizontal: 20 },
     dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
     dotActive: { backgroundColor: '#fff', width: 22 },
