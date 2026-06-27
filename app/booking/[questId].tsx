@@ -126,18 +126,17 @@ export default function BookingScreen() {
       const dateFormatted = new Date(date).toLocaleDateString('ru-RU', {
         day: 'numeric', month: 'long', year: 'numeric',
       });
-      await sendTelegramMessage(
-        org.owner_telegram_chat_id,
-        ownerBookingNotificationText({
-          roomName:     quest.name,
-          clientName:   clientName.trim(),
-          phone:        phone.trim(),
-          date:         dateFormatted,
-          time:         timeSlot,
-          playersCount,
-          price:        quest.price_per_team,
-        })
-      );
+      const { text: tgText, replyMarkup } = ownerBookingNotificationText({
+        roomName:     quest.name,
+        clientName:   clientName.trim(),
+        phone:        phone.trim(),
+        date:         dateFormatted,
+        time:         timeSlot,
+        playersCount,
+        price:        quest.price_per_team,
+        bookingId:    data.id,
+      });
+      await sendTelegramMessage(org.owner_telegram_chat_id, tgText, replyMarkup);
     }
 
     setLoading(false);
