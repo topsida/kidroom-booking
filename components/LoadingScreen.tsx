@@ -1,63 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
-
-// Оранжевый → розовый → фиолетовый
-const GRADIENT: [string, string, string] = ['#FF6B35', '#E91E8C', '#6A1B9A'];
-
-const STARS = [
-  { xFrac: 0.06, delay: 0,    duration: 4200, emoji: '⭐', size: 22 },
-  { xFrac: 0.18, delay: 700,  duration: 3600, emoji: '✨', size: 16 },
-  { xFrac: 0.29, delay: 1400, duration: 5000, emoji: '🌟', size: 26 },
-  { xFrac: 0.41, delay: 300,  duration: 3900, emoji: '⭐', size: 18 },
-  { xFrac: 0.54, delay: 1100, duration: 4600, emoji: '✨', size: 14 },
-  { xFrac: 0.65, delay: 550,  duration: 3400, emoji: '🌟', size: 20 },
-  { xFrac: 0.76, delay: 1700, duration: 4300, emoji: '⭐', size: 24 },
-  { xFrac: 0.87, delay: 900,  duration: 3800, emoji: '✨', size: 18 },
-  { xFrac: 0.94, delay: 200,  duration: 4800, emoji: '🌟', size: 16 },
-];
-
-function FallingStar({ xFrac, delay, duration, emoji, size }: typeof STARS[0]) {
-  const translateY = useRef(new Animated.Value(-80)).current;
-  const opacity    = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: height + 80,
-            duration,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.timing(opacity, { toValue: 0.85, duration: 400, useNativeDriver: true }),
-            Animated.delay(duration - 800),
-            Animated.timing(opacity, { toValue: 0,    duration: 400, useNativeDriver: true }),
-          ]),
-        ]),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.Text
-      style={{
-        position: 'absolute',
-        left: xFrac * width,
-        top: 0,
-        fontSize: size,
-        opacity,
-        transform: [{ translateY }],
-      }}
-    >
-      {emoji}
-    </Animated.Text>
-  );
-}
+import { View, Text, Animated, StyleSheet, Image } from 'react-native';
+import { useFonts, Creepster_400Regular } from '@expo-google-fonts/creepster';
 
 function PulsingDot({ delay }: { delay: number }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -68,7 +11,7 @@ function PulsingDot({ delay }: { delay: number }) {
         Animated.delay(delay),
         Animated.timing(scale, { toValue: 1.7, duration: 320, useNativeDriver: true }),
         Animated.timing(scale, { toValue: 1,   duration: 320, useNativeDriver: true }),
-        Animated.delay(640 - delay),
+        Animated.delay(960 - delay),
       ])
     );
     anim.start();
@@ -79,37 +22,30 @@ function PulsingDot({ delay }: { delay: number }) {
 }
 
 export function LoadingScreen() {
-  const bounce = useRef(new Animated.Value(0)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
+  const [fontsLoaded] = useFonts({ Creepster_400Regular });
 
   useEffect(() => {
-    Animated.timing(fadeIn, { toValue: 1, duration: 550, useNativeDriver: true }).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, { toValue: -22, duration: 460, useNativeDriver: true }),
-        Animated.timing(bounce, { toValue: 0,   duration: 460, useNativeDriver: true }),
-        Animated.delay(180),
-      ])
-    ).start();
+    Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, []);
 
+  const titleFont = fontsLoaded ? 'Creepster_400Regular' : undefined;
+
   return (
-    <LinearGradient colors={GRADIENT} style={styles.gradient} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
-      {/* Падающие звёздочки */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {STARS.map((s, i) => <FallingStar key={i} {...s} />)}
-      </View>
-
-      {/* Основной контент */}
+    <View style={styles.container}>
       <Animated.View style={[styles.content, { opacity: fadeIn }]}>
-        <Animated.Text style={[styles.emoji, { transform: [{ translateY: bounce }] }]}>
-          🎪
-        </Animated.Text>
+        <Image
+          source={require('../assets/adaptive-icon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        <Text style={styles.title}>QuestPoint</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.titleQuest, { fontFamily: titleFont }]}>Quest</Text>
+          <Text style={[styles.titlePoint, { fontFamily: titleFont }]}>Point</Text>
+        </View>
 
-        <Text style={styles.subtitle}>Ищем лучшие игровые комнаты…</Text>
+        <Text style={styles.subtitle}>Бронируй квесты</Text>
 
         <View style={styles.dots}>
           <PulsingDot delay={0} />
@@ -117,28 +53,53 @@ export function LoadingScreen() {
           <PulsingDot delay={400} />
         </View>
       </Animated.View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content:  { alignItems: 'center', gap: 10 },
-  emoji:    { fontSize: 96, marginBottom: 8 },
-  title: {
-    fontSize: 42,
-    fontWeight: '900',
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    alignItems: 'center',
+  },
+  logo: {
+    width: 220,
+    height: 220,
+    backgroundColor: 'transparent',
+    marginBottom: 10,
+  },
+  titleRow: {
+    flexDirection: 'row',
+  },
+  titleQuest: {
+    fontSize: 36,
+    color: '#1D9E75',
+    letterSpacing: 1,
+  },
+  titlePoint: {
+    fontSize: 36,
     color: '#FFFFFF',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0,0,0,0.25)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.80)',
-    marginTop: 2,
+    fontSize: 14,
+    color: '#555555',
+    marginTop: 8,
   },
-  dots: { flexDirection: 'row', gap: 10, marginTop: 32 },
-  dot:  { width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.75)' },
+  dots: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#1D9E75',
+  },
 });

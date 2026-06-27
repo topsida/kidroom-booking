@@ -1,13 +1,60 @@
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { sendTelegramMessage, bookingConfirmationText, ownerBookingNotificationText } from '@/lib/telegram';
 import { Booking } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+
+type BookingStatus = Booking['status'];
+
+const STATUS_CONFIG: Record<BookingStatus, {
+  icon: string; iconColor: string; badgeColor: string;
+  title: string; subtitle: string; badge: string;
+}> = {
+  pending: {
+    icon: 'time-outline',
+    iconColor: '#F59E0B',
+    badgeColor: '#F59E0B',
+    title: 'Заявка отправлена!',
+    subtitle: 'Ожидайте подтверждения от организатора',
+    badge: 'Ожидает подтверждения',
+  },
+  confirmed: {
+    icon: 'checkmark-circle',
+    iconColor: '#10B981',
+    badgeColor: '#10B981',
+    title: 'Бронирование\nподтверждено!',
+    subtitle: 'Ждём вас! 🌟',
+    badge: 'Подтверждено',
+  },
+  rejected: {
+    icon: 'close-circle',
+    iconColor: '#EF4444',
+    badgeColor: '#EF4444',
+    title: 'Заявка отклонена',
+    subtitle: 'Попробуйте выбрать другое время',
+    badge: 'Отклонено',
+  },
+  cancelled: {
+    icon: 'close-circle-outline',
+    iconColor: '#6B7280',
+    badgeColor: '#6B7280',
+    title: 'Бронирование отменено',
+    subtitle: '',
+    badge: 'Отменено',
+  },
+  completed: {
+    icon: 'checkmark-done-circle',
+    iconColor: '#6B7280',
+    badgeColor: '#6B7280',
+    title: 'Квест завершён',
+    subtitle: 'Спасибо за посещение!',
+    badge: 'Завершено',
+  },
+};
 
 export default function ConfirmationScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
@@ -17,61 +64,44 @@ export default function ConfirmationScreen() {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [telegramSent, setTelegramSent] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const iconScale = useRef(new Animated.Value(1)).current;
   const router = useRouter();
 
   useEffect(() => { load(); }, [bookingId]);
 
+  // Real-time подписка на изменение статуса
+  useEffect(() => {
+    if (!bookingId) return;
+    const channel = supabase
+      .channel(`booking-status-${bookingId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `id=eq.${bookingId}` },
+        (payload) => {
+          const newStatus = payload.new.status as BookingStatus;
+          setBooking(prev => prev ? { ...prev, status: newStatus } : prev);
+          if (newStatus === 'confirmed') {
+            setShowConfetti(true);
+            Animated.sequence([
+              Animated.spring(iconScale, { toValue: 1.3, useNativeDriver: true, speed: 20 }),
+              Animated.spring(iconScale, { toValue: 1,   useNativeDriver: true, speed: 10 }),
+            ]).start();
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [bookingId]);
+
   async function load() {
-    console.log('[Confirmation] load() started, bookingId:', bookingId);
-
     const { data } = await supabase
-      .from('bookings').select('*, rooms(*), quests(*)').eq('id', bookingId).single();
-
+      .from('bookings')
+      .select('*, rooms(*), quests(*)')
+      .eq('id', bookingId)
+      .single();
     setBooking(data);
     setLoading(false);
-
-    if (!data?.rooms) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from('users').select('telegram_chat_id, name, phone').eq('id', user.id).single();
-
-    const dateFormatted = new Date(data.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    const questName = data.quests?.name ?? data.rooms.name;
-    const teamPrice = data.quests?.price_per_team ?? data.rooms.price_per_team ?? data.rooms.price_per_hour;
-
-    if (profile?.telegram_chat_id) {
-      await sendTelegramMessage(
-        profile.telegram_chat_id,
-        bookingConfirmationText({
-          roomName: questName,
-          date: dateFormatted,
-          time: data.time_slot.slice(0, 5),
-          playersCount: data.players_count,
-          price: teamPrice,
-        })
-      );
-      setTelegramSent(true);
-    }
-
-    if (data.rooms.owner_telegram_chat_id) {
-      await sendTelegramMessage(
-        data.rooms.owner_telegram_chat_id,
-        ownerBookingNotificationText({
-          roomName: questName,
-          clientName: profile?.name ?? '',
-          phone: profile?.phone ?? '',
-          date: dateFormatted,
-          time: data.time_slot.slice(0, 5),
-          playersCount: data.players_count,
-          price: teamPrice,
-        })
-      );
-    }
   }
 
   if (loading) {
@@ -79,16 +109,54 @@ export default function ConfirmationScreen() {
   }
   if (!booking) return null;
 
-  const dateFormatted = new Date(booking.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const status = booking.status in STATUS_CONFIG
+    ? STATUS_CONFIG[booking.status]
+    : STATUS_CONFIG.pending;
+
+  const dateFormatted = new Date(booking.date).toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
+  const price = booking.quests?.price_per_team
+    ?? booking.rooms?.price_per_team
+    ?? booking.rooms?.price_per_hour
+    ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Ionicons name="checkmark-circle" size={88} color={C.success} style={styles.icon} />
-          <Text style={styles.title}>Бронирование{'\n'}подтверждено!</Text>
-          <Text style={styles.subtitle}>Ждём вас! 🌟</Text>
 
+          {/* Иконка статуса */}
+          <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+            <Ionicons
+              name={status.icon as any}
+              size={88}
+              color={status.iconColor}
+              style={styles.icon}
+            />
+          </Animated.View>
+
+          {/* Заголовок */}
+          <Text style={styles.title}>{status.title}</Text>
+          {status.subtitle ? <Text style={styles.subtitle}>{status.subtitle}</Text> : null}
+
+          {/* Бейдж статуса */}
+          <View style={[styles.statusBadge, { backgroundColor: status.badgeColor + '22', borderColor: status.badgeColor + '55' }]}>
+            <View style={[styles.statusDot, { backgroundColor: status.badgeColor }]} />
+            <Text style={[styles.statusText, { color: status.badgeColor }]}>{status.badge}</Text>
+          </View>
+
+          {/* Подсказка для pending */}
+          {booking.status === 'pending' && (
+            <View style={styles.pendingHint}>
+              <Ionicons name="notifications-outline" size={16} color={C.textLight} />
+              <Text style={styles.pendingHintText}>
+                Организатор получил уведомление и скоро подтвердит вашу заявку
+              </Text>
+            </View>
+          )}
+
+          {/* Детали брони */}
           <View style={styles.card}>
             {booking.quests?.name && (
               <Row icon="game-controller-outline" label="Квест" value={booking.quests.name} rowStyles={rowStyles} />
@@ -98,17 +166,15 @@ export default function ConfirmationScreen() {
             <Row icon="calendar-outline" label="Дата" value={dateFormatted} rowStyles={rowStyles} />
             <Row icon="time-outline" label="Время" value={booking.time_slot.slice(0, 5)} rowStyles={rowStyles} />
             <Row icon="people-outline" label="Игроки" value={`${booking.players_count} чел`} rowStyles={rowStyles} />
-            <Row icon="cash-outline" label="Стоимость"
-              value={`${(booking.quests?.price_per_team ?? booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽`}
-              last rowStyles={rowStyles} />
+            <Row
+              icon="cash-outline"
+              label="Стоимость"
+              value={`${price.toLocaleString('ru-RU')} ₽`}
+              last
+              rowStyles={rowStyles}
+            />
           </View>
 
-          {telegramSent && (
-            <View style={styles.telegramBanner}>
-              <Ionicons name="paper-plane" size={18} color={C.secondary} />
-              <Text style={styles.telegramText}>Уведомление отправлено в Telegram</Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.footer}>
@@ -121,12 +187,15 @@ export default function ConfirmationScreen() {
         </View>
       </ScrollView>
 
-      <ConfettiCelebration />
+      {showConfetti && <ConfettiCelebration />}
     </SafeAreaView>
   );
 }
 
-function Row({ icon, label, value, last, rowStyles }: { icon: string; label: string; value: string; last?: boolean; rowStyles: ReturnType<typeof makeRowStyles> }) {
+function Row({ icon, label, value, last, rowStyles }: {
+  icon: string; label: string; value: string; last?: boolean;
+  rowStyles: ReturnType<typeof makeRowStyles>;
+}) {
   return (
     <View style={[rowStyles.wrap, last && rowStyles.last]}>
       <Ionicons name={icon as any} size={18} color={rowStyles._primary as any} />
@@ -150,19 +219,38 @@ function makeRowStyles(C: ThemeColors) {
 
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: C.background },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
-    content: { padding: 24, alignItems: 'center', gap: 16 },
-    icon: { marginTop: 16 },
-    title: { fontSize: 26, fontWeight: '800', color: C.text, textAlign: 'center', lineHeight: 34 },
-    subtitle: { fontSize: 15, color: C.textLight },
-    card: { backgroundColor: C.white, borderRadius: 16, padding: 16, width: '100%', borderWidth: 1, borderColor: C.border },
-    telegramBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.primaryLight, borderRadius: 12, padding: 14, width: '100%' },
-    telegramText: { fontSize: 14, color: C.secondary, fontWeight: '500', flex: 1 },
-    footer: { padding: 20, gap: 12 },
-    primaryBtn: { backgroundColor: C.primary, borderRadius: 14, padding: 17, alignItems: 'center' },
+    container:   { flex: 1, backgroundColor: C.background },
+    centered:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.background },
+    content:     { padding: 24, alignItems: 'center', gap: 16 },
+    icon:        { marginTop: 16 },
+    title:       { fontSize: 26, fontWeight: '800', color: C.text, textAlign: 'center', lineHeight: 34 },
+    subtitle:    { fontSize: 15, color: C.textLight },
+
+    statusBadge: {
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+    },
+    statusDot:   { width: 8, height: 8, borderRadius: 4 },
+    statusText:  { fontSize: 14, fontWeight: '700' },
+
+    pendingHint: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+      backgroundColor: C.white, borderRadius: 12, padding: 14,
+      borderWidth: 1, borderColor: C.border, width: '100%',
+    },
+    pendingHintText: { fontSize: 13, color: C.textLight, flex: 1, lineHeight: 19 },
+
+    card: {
+      backgroundColor: C.white, borderRadius: 16, padding: 16,
+      width: '100%', borderWidth: 1, borderColor: C.border,
+    },
+    footer:         { padding: 20, gap: 12 },
+    primaryBtn:     { backgroundColor: C.primary, borderRadius: 14, padding: 17, alignItems: 'center' },
     primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-    secondaryBtn: { backgroundColor: C.white, borderRadius: 14, padding: 17, alignItems: 'center', borderWidth: 1.5, borderColor: C.border },
+    secondaryBtn: {
+      backgroundColor: C.white, borderRadius: 14, padding: 17, alignItems: 'center',
+      borderWidth: 1.5, borderColor: C.border,
+    },
     secondaryBtnText: { color: C.text, fontSize: 16, fontWeight: '600' },
   });
 }

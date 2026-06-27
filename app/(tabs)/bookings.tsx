@@ -31,7 +31,7 @@ export default function BookingsScreen() {
     if (!user) { setLoading(false); setRefreshing(false); return; }
     const { data } = await supabase
       .from('bookings')
-      .select('*, rooms(*)')
+      .select('*, rooms(*), quests(name)')
       .eq('user_id', user.id)
       .order('date', { ascending: false });
     setBookings(data ?? []);

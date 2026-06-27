@@ -14,6 +14,7 @@ import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { RoomCard } from '@/components/RoomCard';
 import { RoomsMap } from '@/components/RoomsMap';
 import { FilterChips } from '@/components/FilterChips';
+import { HatIcon } from '@/components/HatIcon';
 import { useAuth } from '@/hooks/useAuth';
 
 type ViewMode = 'list' | 'map';
@@ -162,7 +163,10 @@ export default function HomeScreen() {
       {/* Шапка */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>🎭 QuestPoint</Text>
+          <View style={styles.titleRow}>
+            <HatIcon size={28} />
+            <Text style={styles.title}>QuestPoint</Text>
+          </View>
           <Text style={styles.subtitle}>Найди идеальный квест-рум в Ростове</Text>
         </View>
         <View style={styles.toggle}>
@@ -332,6 +336,7 @@ function makeStyles(C: ThemeColors) {
       paddingTop: 16,
       paddingBottom: 10,
     },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     title:    { fontSize: 26, fontWeight: '800', color: C.text },
     subtitle: { fontSize: 14, color: C.textLight, marginTop: 2 },
 

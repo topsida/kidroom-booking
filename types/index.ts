@@ -74,7 +74,9 @@ export interface Booking {
   date: string;
   time_slot: string;
   players_count: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected';
+  client_name?: string;
+  phone?: string;
   created_at: string;
   rooms?: Room;
   quests?: Quest;

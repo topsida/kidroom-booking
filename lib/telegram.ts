@@ -24,10 +24,20 @@ export function ownerCancellationNotificationText(p: {
   const client = p.clientName?.trim() ? `${p.clientName} · ${p.phone}` : p.phone;
   return (
     `❌ <b>Бронь отменена</b>\n\n` +
-    `🎭 <b>Квест:</b> ${p.roomName}\n` +
+    `🎩 <b>Квест:</b> ${p.roomName}\n` +
     `👤 <b>Клиент:</b> ${client}\n` +
     `📅 <b>Дата:</b> ${p.date}\n` +
     `🕐 <b>Время:</b> ${p.time}`
+  );
+}
+
+export function userBookingRejectedText(p: { roomName: string; date: string; time: string }) {
+  return (
+    `😔 <b>Заявка отклонена</b>\n\n` +
+    `🎩 <b>Квест:</b> ${p.roomName}\n` +
+    `📅 <b>Дата:</b> ${p.date}\n` +
+    `🕐 <b>Время:</b> ${p.time}\n\n` +
+    `К сожалению, это время недоступно. Попробуйте выбрать другое.`
   );
 }
 
@@ -43,7 +53,7 @@ export function ownerBookingNotificationText(p: {
   const client = p.clientName?.trim() ? `${p.clientName} · ${p.phone}` : p.phone;
   return (
     `📋 <b>Новое бронирование!</b>\n\n` +
-    `🎭 <b>Квест:</b> ${p.roomName}\n` +
+    `🎩 <b>Квест:</b> ${p.roomName}\n` +
     `👤 <b>Клиент:</b> ${client}\n` +
     `📅 <b>Дата:</b> ${p.date}\n` +
     `🕐 <b>Время:</b> ${p.time}\n` +
@@ -61,7 +71,7 @@ export function bookingConfirmationText(p: {
 }) {
   return (
     `🎉 <b>Бронирование подтверждено!</b>\n\n` +
-    `🎭 <b>Квест:</b> ${p.roomName}\n` +
+    `🎩 <b>Квест:</b> ${p.roomName}\n` +
     `📅 <b>Дата:</b> ${p.date}\n` +
     `🕐 <b>Время:</b> ${p.time}\n` +
     `👥 <b>Игроков:</b> ${p.playersCount} чел\n` +

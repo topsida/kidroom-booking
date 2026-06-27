@@ -6,13 +6,15 @@ import { Room, Genre } from '@/types';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
 import { useFavorites } from '@/context/FavoritesContext';
 
-const GENRE_META: Record<Genre, { emoji: string; bg: string }> = {
+const HAT = require('../assets/adaptive-icon.png');
+
+const GENRE_META: Record<Genre, { emoji: string; hatIcon?: true; bg: string }> = {
   'хоррор':     { emoji: '👻', bg: '#7B1010' },
   'детектив':   { emoji: '🔍', bg: '#1A3A5C' },
   'приключение':{ emoji: '⚔️', bg: '#1A5C2A' },
   'детский':    { emoji: '🎈', bg: '#C04A00' },
   'VR':         { emoji: '🥽', bg: '#4A0E8F' },
-  'перформанс': { emoji: '🎭', bg: '#8F0E6A' },
+  'перформанс': { emoji: '', hatIcon: true, bg: '#8F0E6A' },
 };
 
 function questWord(n: number) {
@@ -55,7 +57,13 @@ export function RoomCard({ room }: { room: Room }) {
               const m = GENRE_META[g];
               return (
                 <View key={g} style={[styles.genreBadge, { backgroundColor: m.bg }]}>
-                  <Text style={styles.genreText}>{m.emoji} {g}</Text>
+                  {m.hatIcon
+                    ? <View style={styles.genreBadgeRow}>
+                        <Image source={HAT} style={styles.genreHat} resizeMode="contain" />
+                        <Text style={styles.genreText}>{g}</Text>
+                      </View>
+                    : <Text style={styles.genreText}>{m.emoji} {g}</Text>
+                  }
                 </View>
               );
             })}
@@ -145,6 +153,8 @@ function makeStyles(C: ThemeColors) {
       borderRadius: 20,
     },
     genreText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    genreBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    genreHat: { width: 14, height: 14 },
 
     favBtn: {
       position: 'absolute',

@@ -6,6 +6,7 @@ export interface ThemeColors {
   primaryLight: string;
   secondary: string;
   background: string;
+  header: string;
   white: string;
   text: string;
   textLight: string;
@@ -16,7 +17,7 @@ export interface ThemeColors {
   star: string;
 }
 
-export type ThemeId = 'warm' | 'dark' | 'nature' | 'kids';
+export type ThemeId = 'dark' | 'light';
 
 export interface ThemeDef {
   id: ThemeId;
@@ -29,66 +30,36 @@ const SHARED = { success: '#4CAF50', warning: '#FF9800', error: '#F44336', star:
 
 export const THEMES: ThemeDef[] = [
   {
-    id: 'warm',
-    name: 'Тёплый',
-    emoji: '🌅',
-    colors: {
-      primary: '#FF6B35',
-      primaryLight: '#FFE0CC',
-      secondary: '#E05A28',
-      background: '#FFF9F5',
-      white: '#FFFFFF',
-      text: '#2D2D3A',
-      textLight: '#8E8EA9',
-      border: '#EED8CC',
-      ...SHARED,
-    },
-  },
-  {
     id: 'dark',
-    name: 'Тёмный',
+    name: 'Тёмная',
     emoji: '🌙',
     colors: {
-      primary: '#6C63FF',
-      primaryLight: '#2A2640',
-      secondary: '#FF6B9D',
-      background: '#0A0A1A',
-      white: '#1A1A2E',
-      text: '#F0F0FF',
-      textLight: '#8888AA',
-      border: '#2A2A4A',
+      primary:      '#1D9E75',
+      primaryLight: '#0d3d2e',
+      secondary:    '#16836E',
+      background:   '#111111',
+      header:       '#0a0a0a',
+      white:        '#1a1a1a',
+      text:         '#F0F0F0',
+      textLight:    '#666666',
+      border:       '#2a2a2a',
       ...SHARED,
     },
   },
   {
-    id: 'nature',
-    name: 'Природный',
-    emoji: '🌿',
+    id: 'light',
+    name: 'Светлая',
+    emoji: '☀️',
     colors: {
-      primary: '#2ECC71',
-      primaryLight: '#D4F5E5',
-      secondary: '#27AE60',
-      background: '#F0F7F4',
-      white: '#FFFFFF',
-      text: '#1A3A2A',
-      textLight: '#6A8A7A',
-      border: '#C8E6D8',
-      ...SHARED,
-    },
-  },
-  {
-    id: 'kids',
-    name: 'Детский',
-    emoji: '🎀',
-    colors: {
-      primary: '#FF4B8B',
-      primaryLight: '#FFD6E8',
-      secondary: '#FF80B0',
-      background: '#FFF5F8',
-      white: '#FFFFFF',
-      text: '#2D1A24',
-      textLight: '#9A7A88',
-      border: '#F0D0DD',
+      primary:      '#1D9E75',
+      primaryLight: '#E0F5EE',
+      secondary:    '#16836E',
+      background:   '#F5F5F5',
+      header:       '#FFFFFF',
+      white:        '#FFFFFF',
+      text:         '#1A1A1A',
+      textLight:    '#888888',
+      border:       '#E0E0E0',
       ...SHARED,
     },
   },
@@ -97,13 +68,17 @@ export const THEMES: ThemeDef[] = [
 interface ThemeContextType {
   theme: ThemeDef;
   colors: ThemeColors;
+  isDark: boolean;
   setTheme: (id: ThemeId) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: THEMES[0],
   colors: THEMES[0].colors,
+  isDark: true,
   setTheme: () => {},
+  toggleTheme: () => {},
 });
 
 const STORAGE_KEY = 'app_theme_id';
@@ -124,8 +99,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, id);
   }
 
+  function toggleTheme() {
+    setTheme(theme.id === 'dark' ? 'light' : 'dark');
+  }
+
+  const isDark = theme.id === 'dark';
+
   return (
-    <ThemeContext.Provider value={{ theme, colors: theme.colors, setTheme }}>
+    <ThemeContext.Provider value={{ theme, colors: theme.colors, isDark, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

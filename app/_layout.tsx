@@ -9,7 +9,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 
 function RootContent() {
   const { session, loading } = useAuth();
-  const { colors, theme } = useTheme();
+  const { colors, isDark } = useTheme();
   const segments = useSegments();
   const router = useRouter();
   const [minLoadDone, setMinLoadDone] = useState(false);
@@ -40,18 +40,18 @@ function RootContent() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="room/[id]"
-          options={{ headerShown: true, title: 'Комната', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
+          options={{ headerShown: true, title: 'Комната', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.header }, headerTitleStyle: { color: colors.text } }}
         />
         <Stack.Screen
           name="booking/[roomId]"
-          options={{ headerShown: true, title: 'Бронирование', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
+          options={{ headerShown: true, title: 'Бронирование', headerTintColor: colors.primary, headerBackTitle: 'Назад', headerStyle: { backgroundColor: colors.header }, headerTitleStyle: { color: colors.text } }}
         />
         <Stack.Screen
           name="confirmation/[bookingId]"
-          options={{ headerShown: true, title: 'Подтверждение', headerTintColor: colors.primary, headerBackVisible: false, headerStyle: { backgroundColor: colors.background }, headerTitleStyle: { color: colors.text } }}
+          options={{ headerShown: true, title: 'Подтверждение', headerTintColor: colors.primary, headerBackVisible: false, headerStyle: { backgroundColor: colors.header }, headerTitleStyle: { color: colors.text } }}
         />
       </Stack>
-      <StatusBar style={theme.id === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </>
   );
 }

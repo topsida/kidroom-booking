@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView,
+  Alert, ActivityIndicator, ScrollView, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme, THEMES, ThemeId, ThemeColors } from '@/context/ThemeContext';
+import { useTheme, ThemeColors } from '@/context/ThemeContext';
 
 export default function ProfileScreen() {
   const { profile, isGuest, signOut, updateProfile } = useAuth();
-  const { colors: C, theme, setTheme } = useTheme();
+  const { colors: C, isDark, toggleTheme } = useTheme();
   const [name, setName] = useState('');
   const [telegramId, setTelegramId] = useState('');
   const [saving, setSaving] = useState(false);
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <ThemePicker currentId={theme.id} onSelect={setTheme} styles={styles} C={C} />
+        <ThemeToggle isDark={isDark} onToggle={toggleTheme} styles={styles} C={C} />
 
         <TouchableOpacity style={styles.signOutBtn} onPress={confirmSignOut}>
           <Text style={styles.signOutText}>Выйти из гостевого режима</Text>
@@ -133,7 +133,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <ThemePicker currentId={theme.id} onSelect={setTheme} styles={styles} C={C} />
+        <ThemeToggle isDark={isDark} onToggle={toggleTheme} styles={styles} C={C} />
 
         <TouchableOpacity style={styles.signOutBtn} onPress={confirmSignOut}>
           <Text style={styles.signOutText}>Выйти из аккаунта</Text>
@@ -143,39 +143,28 @@ export default function ProfileScreen() {
   );
 }
 
-function ThemePicker({ currentId, onSelect, styles, C }: {
-  currentId: ThemeId;
-  onSelect: (id: ThemeId) => void;
+function ThemeToggle({ isDark, onToggle, styles, C }: {
+  isDark: boolean;
+  onToggle: () => void;
   styles: ReturnType<typeof makeStyles>;
   C: ThemeColors;
 }) {
   return (
     <View style={styles.themeSection}>
       <Text style={styles.themeSectionTitle}>Оформление</Text>
-      <View style={styles.themeGrid}>
-        {THEMES.map(t => {
-          const active = t.id === currentId;
-          return (
-            <TouchableOpacity
-              key={t.id}
-              style={[styles.themeCard, active && { borderColor: C.primary, borderWidth: 2.5 }]}
-              onPress={() => onSelect(t.id)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.themeStrip, { backgroundColor: t.colors.background }]}>
-                <View style={[styles.themeAccent, { backgroundColor: t.colors.primary }]} />
-                <View style={[styles.themeAccentLight, { backgroundColor: t.colors.primaryLight }]} />
-              </View>
-              <View style={styles.themeLabel}>
-                <Text style={styles.themeEmoji}>{t.emoji}</Text>
-                <Text style={[styles.themeName, active && { color: C.primary, fontWeight: '700' }]}>
-                  {t.name}
-                </Text>
-                {active && <Text style={[styles.themeCheck, { color: C.primary }]}>✓</Text>}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.themeToggleRow}>
+        <Text style={styles.themeToggleEmoji}>{isDark ? '🌙' : '☀️'}</Text>
+        <View style={styles.themeToggleLabels}>
+          <Text style={styles.themeToggleLabel}>{isDark ? 'Тёмная тема' : 'Светлая тема'}</Text>
+          <Text style={styles.themeToggleSub}>{isDark ? 'Переключить на светлую' : 'Переключить на тёмную'}</Text>
+        </View>
+        <Switch
+          value={isDark}
+          onValueChange={onToggle}
+          trackColor={{ false: '#E0E0E0', true: C.primaryLight }}
+          thumbColor={C.primary}
+          ios_backgroundColor="#E0E0E0"
+        />
       </View>
     </View>
   );
@@ -225,21 +214,19 @@ function makeStyles(C: ThemeColors) {
 
     themeSection: { marginHorizontal: 20, marginTop: 24, marginBottom: 8 },
     themeSectionTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 12 },
-    themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    themeCard: {
-      width: '47%',
-      borderRadius: 14,
-      overflow: 'hidden',
-      borderWidth: 1.5,
-      borderColor: C.border,
+    themeToggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: C.white,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: C.border,
+      gap: 12,
     },
-    themeStrip: { height: 52, flexDirection: 'row', overflow: 'hidden' },
-    themeAccent: { width: '40%', height: '100%' },
-    themeAccentLight: { flex: 1, height: '100%' },
-    themeLabel: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 6 },
-    themeEmoji: { fontSize: 16 },
-    themeName: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500' },
-    themeCheck: { fontSize: 14, fontWeight: '700' },
+    themeToggleEmoji: { fontSize: 24 },
+    themeToggleLabels: { flex: 1, gap: 2 },
+    themeToggleLabel: { fontSize: 15, fontWeight: '600', color: C.text },
+    themeToggleSub: { fontSize: 12, color: C.textLight },
   });
 }

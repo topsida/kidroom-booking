@@ -4,7 +4,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -13,8 +13,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.border,
+          backgroundColor: colors.header,
+          borderTopColor: isDark ? colors.border : colors.primary,
+          borderTopWidth: 1,
           paddingTop: 8,
           paddingBottom: insets.bottom + 10,
           height: 60 + insets.bottom,

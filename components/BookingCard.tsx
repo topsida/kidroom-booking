@@ -12,6 +12,7 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
     confirmed: { label: 'Подтверждено', color: C.success },
     pending:   { label: 'Ожидает',      color: C.warning },
     cancelled: { label: 'Отменено',     color: C.error },
+    rejected:  { label: 'Отклонено',   color: C.error },
     completed: { label: 'Завершено',    color: C.textLight },
   };
 
@@ -33,6 +34,9 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
           <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
         </View>
       </View>
+      {booking.quests?.name && (
+        <Text style={styles.questName} numberOfLines={1}>🎩 {booking.quests.name}</Text>
+      )}
       <View style={styles.row}>
         <Ionicons name="calendar-outline" size={14} color={C.textLight} />
         <Text style={styles.detail}>{dateFormatted}</Text>
@@ -45,7 +49,7 @@ export function BookingCard({ booking, onCancel }: { booking: Booking; onCancel?
       </View>
       <View style={styles.footer}>
         <Text style={styles.price}>
-          {(booking.rooms?.price_per_team ?? booking.rooms?.price_per_hour ?? 0).toLocaleString('ru-RU')} ₽
+          {(booking.total_price ?? booking.rooms?.price_per_team ?? 0).toLocaleString('ru-RU')} ₽
         </Text>
         {onCancel && (
           <TouchableOpacity style={styles.cancelBtn} onPress={confirmCancel}>
@@ -62,6 +66,7 @@ function makeStyles(C: ThemeColors) {
     card: { backgroundColor: C.white, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.border, gap: 8 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     name: { fontSize: 16, fontWeight: '700', color: C.text, flex: 1, marginRight: 8 },
+    questName: { fontSize: 13, color: C.primary, fontWeight: '600' },
     badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     badgeText: { fontSize: 12, fontWeight: '600' },
     row: { flexDirection: 'row', alignItems: 'center', gap: 6 },

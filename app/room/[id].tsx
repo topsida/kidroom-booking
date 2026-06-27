@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  View, Text, ScrollView, Image, StyleSheet, TouchableOpacity,
+  View, Text, ScrollView, FlatList, Image, StyleSheet, TouchableOpacity,
   Dimensions, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView,
   Platform, Modal, TouchableWithoutFeedback, Linking,
 } from 'react-native';
@@ -18,13 +18,15 @@ const W = Dimensions.get('window').width;
 
 // ── визуальные словари ────────────────────────────────────────────────────────
 
-const GENRE_META: Record<Genre, { emoji: string; bg: string }> = {
+const HAT = require('../../assets/adaptive-icon.png');
+
+const GENRE_META: Record<Genre, { emoji: string; hatIcon?: true; bg: string }> = {
   'хоррор':     { emoji: '👻', bg: '#7B1010' },
   'детектив':   { emoji: '🔍', bg: '#1A3A5C' },
   'приключение':{ emoji: '⚔️', bg: '#1A5C2A' },
   'детский':    { emoji: '🎈', bg: '#C04A00' },
   'VR':         { emoji: '🥽', bg: '#4A0E8F' },
-  'перформанс': { emoji: '🎭', bg: '#8F0E6A' },
+  'перформанс': { emoji: '', hatIcon: true, bg: '#8F0E6A' },
 };
 
 const DIFF_COLOR: Record<Difficulty, string> = {
@@ -37,6 +39,110 @@ const RATING_CAPTIONS: Record<number, string> = {
   1: 'Ужасно 😞', 2: 'Плохо 😕', 3: 'Нормально 😐', 4: 'Хорошо 😊', 5: 'Отлично! 🎉',
 };
 
+// ── галерея фотографий квеста ─────────────────────────────────────────────────
+
+const SW = Dimensions.get('window').width;
+
+function PhotoGallery({ photos }: { photos: string[] }) {
+  const [visible, setVisible]   = useState(false);
+  const [initIdx, setInitIdx]   = useState(0);
+  const [curIdx,  setCurIdx]    = useState(0);
+  const listRef = useRef<FlatList>(null);
+
+  function open(idx: number) {
+    setInitIdx(idx);
+    setCurIdx(idx);
+    setVisible(true);
+  }
+
+  return (
+    <>
+      {/* Горизонтальная полоса превью */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={gS.strip}
+      >
+        {photos.map((uri, i) => (
+          <TouchableOpacity key={i} onPress={() => open(i)} activeOpacity={0.85}>
+            <Image source={{ uri }} style={gS.thumb} resizeMode="cover" />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Полноэкранный просмотр */}
+      <Modal
+        visible={visible}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)}
+        statusBarTranslucent
+      >
+        <View style={gS.modalBg}>
+          <FlatList
+            ref={listRef}
+            data={photos}
+            keyExtractor={(_, i) => String(i)}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={initIdx}
+            getItemLayout={(_, i) => ({ length: SW, offset: SW * i, index: i })}
+            onLayout={() => {
+              if (initIdx > 0) {
+                listRef.current?.scrollToOffset({ offset: initIdx * SW, animated: false });
+              }
+            }}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SW);
+              setCurIdx(idx);
+            }}
+            renderItem={({ item }) => (
+              <View style={gS.slide}>
+                <Image source={{ uri: item }} style={gS.fullImg} resizeMode="contain" />
+              </View>
+            )}
+          />
+
+          {/* Крестик */}
+          <TouchableOpacity
+            style={gS.closeBtn}
+            onPress={() => setVisible(false)}
+            hitSlop={12}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Счётчик */}
+          <View style={gS.counter}>
+            <Text style={gS.counterText}>{curIdx + 1} / {photos.length}</Text>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const gS = StyleSheet.create({
+  strip:       { gap: 4 },
+  thumb:       { width: 130, height: 150 },
+  modalBg:     { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
+  slide:       { width: SW, justifyContent: 'center', alignItems: 'center' },
+  fullImg:     { width: SW, height: SW },
+  closeBtn: {
+    position: 'absolute', top: 52, right: 16,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  counter: {
+    position: 'absolute', bottom: 40, alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20,
+  },
+  counterText: { color: '#fff', fontSize: 14 },
+});
+
 // ── карточка одного квеста ────────────────────────────────────────────────────
 
 function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) {
@@ -45,19 +151,26 @@ function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) 
   const diffColor = quest.difficulty ? DIFF_COLOR[quest.difficulty] : undefined;
   const scary = quest.is_scary && quest.is_scary !== 'нет' ? quest.is_scary : null;
 
-  const photo = quest.photos?.[0]
-    ?? 'https://placehold.co/400x160/1A3A5C/FFFFFF?text=Квест';
+  const photos = (quest.photos && quest.photos.length > 0)
+    ? quest.photos
+    : ['https://placehold.co/400x160/1A3A5C/FFFFFF?text=Квест'];
 
   const s = useMemo(() => questStyles(C), [C]);
 
   return (
     <View style={s.card}>
-      {/* Фото квеста с бейджем жанра */}
+      {/* Горизонтальная галерея фото + бейдж жанра */}
       <View>
-        <Image source={{ uri: photo }} style={s.photo} resizeMode="cover" />
+        <PhotoGallery photos={photos} />
         {genre && (
           <View style={[s.genreBadge, { backgroundColor: genre.bg }]}>
-            <Text style={s.genreText}>{genre.emoji} {quest.genre}</Text>
+            {genre.hatIcon
+              ? <View style={s.genreBadgeRow}>
+                  <Image source={HAT} style={s.genreHat} resizeMode="contain" />
+                  <Text style={s.genreText}>{quest.genre}</Text>
+                </View>
+              : <Text style={s.genreText}>{genre.emoji} {quest.genre}</Text>
+            }
           </View>
         )}
       </View>
@@ -100,7 +213,10 @@ function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) 
             )}
             {quest.has_actor && (
               <View style={[s.tag, { backgroundColor: C.primaryLight, borderColor: C.primary }]}>
-                <Text style={[s.tagText, { color: C.primary }]}>🎭 Актёр</Text>
+                <View style={s.tagRow}>
+                  <Image source={HAT} style={s.tagHat} resizeMode="contain" />
+                  <Text style={[s.tagText, { color: C.primary }]}>Актёр</Text>
+                </View>
               </View>
             )}
             {scary === 'немного' && (
@@ -153,6 +269,8 @@ function questStyles(C: ThemeColors) {
       paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
     },
     genreText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    genreBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    genreHat: { width: 14, height: 14 },
     body: { padding: 14, gap: 8 },
     name: { fontSize: 18, fontWeight: '800', color: C.text },
     desc: { fontSize: 13, color: C.textLight, lineHeight: 19 },
@@ -164,6 +282,8 @@ function questStyles(C: ThemeColors) {
     tagsRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
     tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.background },
     tagText: { fontSize: 12, fontWeight: '600', color: C.text },
+    tagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    tagHat: { width: 14, height: 14 },
     footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
     price: { fontSize: 22, fontWeight: '800', color: C.primary },
     perLabel: { fontSize: 12, color: C.textLight },
