@@ -1,13 +1,11 @@
-export async function sendTelegramMessage(chatId: string, text: string) {
+export async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: object) {
   const BOT_TOKEN = process.env.EXPO_PUBLIC_TELEGRAM_BOT_TOKEN;
-
   if (!BOT_TOKEN || !chatId) return;
-
   try {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', reply_markup: replyMarkup }),
     });
   } catch (e) {
     console.error('[Telegram] fetch error:', e);
@@ -49,10 +47,11 @@ export function ownerBookingNotificationText(p: {
   time: string;
   playersCount: number;
   price: number;
+  bookingId?: string;
 }) {
   const client = p.clientName?.trim() ? `${p.clientName} · ${p.phone}` : p.phone;
-  return (
-    `📋 <b>Новое бронирование!</b>\n\n` +
+  const text = (
+    `🔔 <b>Новое бронирование!</b>\n\n` +
     `🎩 <b>Квест:</b> ${p.roomName}\n` +
     `👤 <b>Клиент:</b> ${client}\n` +
     `📅 <b>Дата:</b> ${p.date}\n` +
@@ -60,6 +59,15 @@ export function ownerBookingNotificationText(p: {
     `👥 <b>Игроков:</b> ${p.playersCount} чел\n` +
     `💰 <b>Сумма:</b> ${p.price.toLocaleString('ru-RU')} ₽`
   );
+
+  const replyMarkup = p.bookingId ? {
+    inline_keyboard: [[
+      { text: '✅ Подтвердить', callback_data: `confirm:${p.bookingId}` },
+      { text: '❌ Отклонить', callback_data: `reject:${p.bookingId}` },
+    ]],
+  } : undefined;
+
+  return { text, replyMarkup };
 }
 
 export function bookingConfirmationText(p: {
