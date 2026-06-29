@@ -145,6 +145,22 @@ const gS = StyleSheet.create({
 
 // ── карточка одного квеста ────────────────────────────────────────────────────
 
+function ExpandableText({ text, style }: { text: string; style: any }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View>
+      <Text style={style} numberOfLines={expanded ? undefined : 2}>{text}</Text>
+      {text.length > 100 && (
+        <TouchableOpacity onPress={() => setExpanded(e => !e)}>
+          <Text style={{ color: '#4CAF50', fontSize: 13, fontWeight: '600', marginTop: 2 }}>
+            {expanded ? 'Свернуть' : 'Читать далее...'}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) {
   const router = useRouter();
   const genre = quest.genre ? GENRE_META[quest.genre] : null;
@@ -181,7 +197,7 @@ function QuestCard({ quest, colors: C }: { quest: Quest; colors: ThemeColors }) 
 
         {/* Описание */}
         {quest.description ? (
-          <Text style={s.desc} numberOfLines={2}>{quest.description}</Text>
+          <ExpandableText text={quest.description} style={s.desc} />
         ) : null}
 
         {/* Характеристики */}
