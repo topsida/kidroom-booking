@@ -1,18 +1,19 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useTheme, ThemeColors } from '@/context/ThemeContext';
+import { HatIcon } from '@/components/HatIcon';
 
 export default function LoginScreen() {
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
 
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+7');
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const router = useRouter();
@@ -56,9 +57,11 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <View style={styles.content}>
-        <Text style={styles.emoji}>🎪</Text>
+        <View style={styles.logoRow}>
+          <HatIcon size={240} />
+        </View>
         <Text style={styles.title}>QuestPoint</Text>
-        <Text style={styles.subtitle}>Бронирование детских{'\n'}игровых комнат</Text>
+        <Text style={styles.subtitle}>Бронируй квесты{'\n'}и мероприятия</Text>
 
         <View style={styles.form}>
           <Text style={styles.label}>Номер телефона</Text>
@@ -66,12 +69,17 @@ export default function LoginScreen() {
             style={styles.input}
             placeholder="+7 (999) 123-45-67"
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={v => {
+              if (!v.startsWith('+7')) { setPhone('+7'); return; }
+              const digits = v.slice(2).replace(/\D/g, '').slice(0, 10);
+              setPhone('+7' + digits);
+            }}
             keyboardType="phone-pad"
             autoFocus
             returnKeyType="done"
             onSubmitEditing={sendOTP}
             placeholderTextColor={C.textLight}
+            maxLength={12}
           />
           <Text style={styles.hint}>Мы отправим SMS с кодом подтверждения</Text>
           <TouchableOpacity
@@ -110,7 +118,7 @@ function makeStyles(C: ThemeColors) {
     container: { flex: 1, backgroundColor: C.background },
     flex: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingTop: 80, paddingBottom: 20 },
-    emoji: { fontSize: 72, textAlign: 'center', marginBottom: 8 },
+    logoRow: { alignItems: 'center', marginBottom: -20 },
     title: { fontSize: 34, fontWeight: '800', color: C.primary, textAlign: 'center' },
     subtitle: { fontSize: 16, color: C.textLight, textAlign: 'center', marginTop: 8, marginBottom: 44, lineHeight: 24 },
     form: { gap: 12 },

@@ -47,7 +47,7 @@ function buildHtml(rooms: Room[]): string {
 <script>
 (function(){
   var map=L.map('map',{zoomControl:true}).setView([${LAT},${LNG}],${ZOOM});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CartoDB</a>'}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(map);
   var pts=${JSON.stringify(pts)};
   pts.forEach(function(r){
     var m=L.marker([r.lat,r.lng]).addTo(map);
