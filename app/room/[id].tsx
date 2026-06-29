@@ -259,10 +259,11 @@ function questStyles(C: ThemeColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: C.white, borderRadius: 16,
-      overflow: 'hidden', borderWidth: 1, borderColor: C.border,
-      elevation: 2,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6,
-    },
+      overflow: 'hidden', borderWidth: 1.5, borderColor: C.border,
+      elevation: 6,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 10,
+      marginBottom: 8,
+	    },
     photo: { width: '100%', height: 150 },
     genreBadge: {
       position: 'absolute', top: 10, left: 10,
@@ -673,7 +674,7 @@ function makeStyles(C: ThemeColors) {
     questCountBadge: { backgroundColor: C.primaryLight, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
     questCountText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
-    questsList: { gap: 14 },
+    questsList: { gap: 20 },
     emptyQuests: { backgroundColor: C.white, borderRadius: 12, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: C.border },
     emptyQuestsText: { color: C.textLight, fontSize: 14 },
 

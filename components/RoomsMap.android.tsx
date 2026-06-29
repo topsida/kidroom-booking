@@ -38,7 +38,7 @@ function buildHtml(rooms: Room[]): string {
 <style>
   html,body{margin:0;padding:0;height:100%;}
   #map{width:100%;height:100%;}
-  .leaflet-control-attribution{font-size:9px;}
+  .leaflet-control-attribution{display:none !important;}
 </style>
 </head>
 <body>
@@ -166,10 +166,10 @@ export function RoomsMap({ rooms }: { rooms: Room[] }) {
             </TouchableOpacity>
           </View>
           <View style={styles.cardFooter}>
-            <Text style={styles.cardPrice}>
-              {selected.price_per_hour} ₽
-              <Text style={styles.perHour}>/час</Text>
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="star" size={16} color="#F59E0B" />
+              <Text style={styles.cardPrice}>{selected.rating?.toFixed(1) ?? '—'}</Text>
+            </View>
             <TouchableOpacity
               style={styles.detailBtn}
               onPress={() => router.push({ pathname: '/room/[id]', params: { id: selected.id } })}
@@ -256,12 +256,12 @@ function makeStyles(C: ThemeColors) {
     },
     cardHeader:  { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
     cardInfo:    { flex: 1 },
-    cardName:    { fontSize: 17, fontWeight: '700', color: C.text, marginBottom: 4 },
+    cardName:    { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 4 },
     cardAddrRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
     cardAddr:    { fontSize: 13, color: C.textLight, flex: 1 },
 
     cardFooter:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    cardPrice:     { fontSize: 22, fontWeight: '800', color: C.primary },
+    cardPrice:     { fontSize: 20, fontWeight: '800', color: '#111' },
     perHour:       { fontSize: 13, fontWeight: '400', color: C.textLight },
     detailBtn:     { backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11 },
     detailBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
