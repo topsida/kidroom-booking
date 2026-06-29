@@ -4,7 +4,7 @@ import {
   Dimensions, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView,
   Platform, Modal, TouchableWithoutFeedback, Linking,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -316,6 +316,7 @@ function questStyles(C: ThemeColors) {
 
 export default function RoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const navigation = useNavigation();
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
   const router = useRouter();
@@ -348,6 +349,7 @@ export default function RoomScreen() {
       ]);
 
       setRoom(roomRes.data);
+      if (roomRes.data?.name) navigation.setOptions({ title: roomRes.data.name });
       setQuests(questsRes.data ?? []);
 
       const allReviews = reviewsRes.data ?? [];
