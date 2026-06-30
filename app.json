@@ -45,7 +45,15 @@
           "locationWhenInUsePermission": "РџСЂРёР»РѕР¶РµРЅРёРµ РёСЃРїРѕР»СЊР·СѓРµС‚ РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РјР°СЂС€СЂСѓС‚Р° РґРѕ РёРіСЂРѕРІРѕР№ РєРѕРјРЅР°С‚С‹."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#111111"
+        }
+      ]
     ],
     "scheme": "kidroom",
     "experiments": {
@@ -60,4 +68,5 @@
     "owner": "topsida"
   }
 }
+
 
