@@ -60,7 +60,7 @@ export default function LoginScreen() {
         <View style={styles.logoRow}>
           <HatIcon size={240} />
         </View>
-        <Text style={styles.title}>QuestPoint</Text>
+        <Text style={styles.title}>QuestFlow</Text>
         <Text style={styles.subtitle}>Бронируй квесты{'\n'}и мероприятия</Text>
 
         <View style={styles.form}>

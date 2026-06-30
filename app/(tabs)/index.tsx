@@ -165,7 +165,7 @@ export default function HomeScreen() {
         <View>
           <View style={styles.titleRow}>
             <HatIcon size={28} />
-            <Text style={styles.title}>QuestPoint</Text>
+            <Text style={styles.title}>QuestFlow</Text>
           </View>
           <Text style={styles.subtitle}>Найди идеальный квест-рум в Ростове</Text>
         </View>

@@ -38,7 +38,7 @@ export function RoomCard({ room }: { room: Room }) {
     : (room.price_per_team ?? room.price_per_hour ?? 0);
 
   const photoUri = room.photos?.[0]
-    ?? 'https://placehold.co/400x200/1A3A5C/FFFFFF?text=QuestPoint';
+    ?? 'https://placehold.co/400x200/1A3A5C/FFFFFF?text=QuestFlow';
 
   return (
     <TouchableOpacity
