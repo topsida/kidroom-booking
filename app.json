@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "QuestFlow",
     "slug": "kidroom-booking",
@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.kidroom.booking",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Приложение использует геолокацию для построения маршрута до игровой комнаты.",
+        "NSLocationWhenInUseUsageDescription": "РџСЂРёР»РѕР¶РµРЅРёРµ РёСЃРїРѕР»СЊР·СѓРµС‚ РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РјР°СЂС€СЂСѓС‚Р° РґРѕ РёРіСЂРѕРІРѕР№ РєРѕРјРЅР°С‚С‹.",
         "LSApplicationQueriesSchemes": [
           "yandexmaps",
           "comgooglemaps"
@@ -26,6 +26,7 @@
       }
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#111111"
@@ -41,7 +42,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Приложение использует геолокацию для построения маршрута до игровой комнаты."
+          "locationWhenInUsePermission": "РџСЂРёР»РѕР¶РµРЅРёРµ РёСЃРїРѕР»СЊР·СѓРµС‚ РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РјР°СЂС€СЂСѓС‚Р° РґРѕ РёРіСЂРѕРІРѕР№ РєРѕРјРЅР°С‚С‹."
         }
       ],
       "expo-font"
@@ -59,3 +60,4 @@
     "owner": "topsida"
   }
 }
+
