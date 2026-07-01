@@ -119,7 +119,7 @@ function makeStyles(C: ThemeColors) {
     flex: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingTop: 80, paddingBottom: 20 },
     logoRow: { alignItems: 'center', marginBottom: -20 },
-    title: { fontSize: 34, fontWeight: '800', color: C.primary, textAlign: 'center' },
+    title: { fontSize: 34, fontWeight: '800', color: '#FFFFFF', textAlign: 'center' },
     subtitle: { fontSize: 16, color: C.textLight, textAlign: 'center', marginTop: 8, marginBottom: 44, lineHeight: 24 },
     form: { gap: 12 },
     label: { fontSize: 14, fontWeight: '600', color: C.text },
