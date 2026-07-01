@@ -42,7 +42,7 @@ export function LoadingScreen() {
 
         <View style={styles.titleRow}>
           <Text style={[styles.titleQuest, { fontFamily: titleFont }]}>Quest</Text>
-          <Text style={[styles.titlePoint, { fontFamily: titleFont }]}>Point</Text>
+          <Text style={[styles.titlePoint, { fontFamily: titleFont }]}>Flow</Text>
         </View>
 
         <Text style={styles.subtitle}>Бронируй квесты</Text>
