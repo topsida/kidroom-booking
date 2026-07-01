@@ -1,36 +1,73 @@
 ﻿{
-  "cli": {
-    "version": ">= 12.0.0",
-    "appVersionSource": "local"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
+  "expo": {
+    "name": "QuestFlow",
+    "slug": "kidroom-booking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111111"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kidroom.booking",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "РџСЂРёР»РѕР¶РµРЅРёРµ РёСЃРїРѕР»СЊР·СѓРµС‚ РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РјР°СЂС€СЂСѓС‚Р° РґРѕ РёРіСЂРѕРІРѕР№ РєРѕРјРЅР°С‚С‹.",
+        "LSApplicationQueriesSchemes": [
+          "yandexmaps",
+          "comgooglemaps"
+        ]
       }
     },
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
+    "android": {
+      "versionCode": 3,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#111111"
+      },
+      "package": "com.kidroom.booking",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "РџСЂРёР»РѕР¶РµРЅРёРµ РёСЃРїРѕР»СЊР·СѓРµС‚ РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РјР°СЂС€СЂСѓС‚Р° РґРѕ РёРіСЂРѕРІРѕР№ РєРѕРјРЅР°С‚С‹."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#111111"
+        }
+      ]
+    ],
+    "scheme": "kidroom",
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11788b27-c68f-446f-9422-c8d23b8f6d39"
       }
     },
-    "production": {
-      "autoIncrement": true,
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "android": {
-        "serviceAccountKeyPath": "./service-account.json",
-        "track": "internal"
-      }
-    }
+    "owner": "topsida"
   }
 }
+
+
 
