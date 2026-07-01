@@ -35,7 +35,7 @@ export function LoadingScreen() {
     <View style={styles.container}>
       <Animated.View style={[styles.content, { opacity: fadeIn }]}>
         <Image
-          source={require('../assets/adaptive-icon.png')}
+          source={require('../assets/logo-transparent.png')}
           style={styles.logo}
           resizeMode="contain"
         />
